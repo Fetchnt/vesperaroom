@@ -1,0 +1,62 @@
+import { Component, inject } from '@angular/core';
+import { ReservaApi } from '../../core/api/entidades';
+import type { EstadoReserva } from '../../core/api/models';
+import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+
+/** Mismas transiciones que valida ReservaService.cambiarEstado. */
+const SIGUIENTES: Partial<Record<EstadoReserva, EstadoReserva[]>> = {
+  PENDIENTE: ['CONFIRMADA'],
+  CONFIRMADA: ['EN_CURSO', 'NO_SHOW'],
+  EN_CURSO: ['FINALIZADA'],
+};
+
+const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
+  { estado: 'CONFIRMADA', texto: 'Confirmar' },
+  { estado: 'EN_CURSO', texto: 'En curso' },
+  { estado: 'FINALIZADA', texto: 'Finalizar' },
+  { estado: 'NO_SHOW', texto: 'No se presentó' },
+];
+
+@Component({
+  selector: 'app-reservas-admin',
+  imports: [TablaCrud],
+  template: `
+    <h1>Reservas</h1>
+    <p class="suave">Todas las reservas del sistema, con su estado y su reembolso si fueron canceladas.</p>
+
+    <app-tabla-crud
+      titulo="Reservas"
+      claveId="idReserva"
+      sinDatos="No hay reservas registradas."
+      [campos]="campos"
+      [cargar]="cargar"
+      [borrar]="borrar"
+      [acciones]="acciones"
+    />
+  `,
+})
+export class ReservasAdmin {
+  private readonly api = inject(ReservaApi);
+
+  protected readonly campos: Campo[] = [
+    { clave: 'codigoReserva', etiqueta: 'Código' },
+    { clave: 'idUsuario', etiqueta: 'Cliente' },
+    { clave: 'idHabitacion', etiqueta: 'Habitación' },
+    { clave: 'fechaHoraInicio', etiqueta: 'Entrada' },
+    { clave: 'fechaHoraFin', etiqueta: 'Salida' },
+    { clave: 'cantidadPersonas', etiqueta: 'Personas' },
+    { clave: 'total', etiqueta: 'Total', tipo: 'decimal' },
+    { clave: 'montoReembolso', etiqueta: 'Reembolso', tipo: 'decimal' },
+    { clave: 'estado', etiqueta: 'Estado', esEstado: true },
+  ];
+
+  protected readonly cargar = () => this.api.crud.getAll();
+  protected readonly borrar = (id: number | string) => this.api.crud.eliminar(id);
+
+  protected readonly acciones: AccionFila[] = ACCIONES.map(({ estado, texto }) => ({
+    texto,
+    visible: (fila: Registro) => (SIGUIENTES[fila['estado'] as EstadoReserva] ?? []).includes(estado),
+    peligro: estado === 'NO_SHOW',
+    ejecutar: (fila: Registro) => this.api.cambiarEstado(fila['idReserva'] as number, estado),
+  }));
+}

@@ -1,0 +1,68 @@
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--superficie);
+  box-shadow: 0 6px 18px rgb(33 37 41 / 0.06);
+}
+
+.barra-interna {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 14px 16px;
+}
+
+.marca {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 1.4rem;
+  font-weight: 400;
+  color: var(--marca);
+}
+
+.marca:hover {
+  text-decoration: none;
+}
+
+.luna {
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.acceso {
+  font-weight: 500;
+  padding: 4px 8px;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+nav a {
+  padding: 6px 10px;
+  border-radius: var(--r-s);
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+nav a:hover {
+  text-decoration: none;
+  background: var(--superficie-2);
+  color: var(--texto);
+}
+
+nav a.activo {
+  color: var(--marca);
+  box-shadow: inset 0 -2px 0 var(--marca);
+  border-radius: 0;
+}

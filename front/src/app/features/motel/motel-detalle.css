@@ -1,0 +1,304 @@
+/* ---------- Galería ---------- */
+
+.galeria {
+  display: grid;
+  gap: 10px;
+}
+
+.principal {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+  border-radius: var(--r-l);
+  background: var(--superficie-2);
+}
+
+.miniaturas {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.miniaturas button {
+  flex: 0 0 auto;
+  padding: 0;
+  border-radius: var(--r-m);
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: none;
+  line-height: 0;
+}
+
+.miniaturas button.activa {
+  border-color: var(--marca);
+}
+
+.miniaturas img {
+  width: 92px;
+  height: 64px;
+  object-fit: cover;
+}
+
+/* ---------- Cabecera ---------- */
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.cabecera h1 {
+  margin-bottom: 2px;
+}
+
+.cabecera p {
+  margin: 0;
+}
+
+.descripcion {
+  margin-top: 8px !important;
+  max-width: 62ch;
+}
+
+.resumen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.desde small {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
+.desde strong {
+  font-size: 1.3rem;
+  color: var(--marca);
+}
+
+/* ---------- Etiquetas ---------- */
+
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etiquetas li {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 5px 12px;
+  border-radius: var(--r-s);
+  background: var(--superficie-2);
+  color: var(--texto);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.etiquetas li small {
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.etiquetas.tenues li {
+  background: var(--superficie-2);
+  color: var(--texto-suave);
+  font-weight: 500;
+  font-size: 0.75rem;
+  padding: 2px 9px;
+}
+
+/* ---------- Reserva ---------- */
+
+.reservar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--superficie);
+  border: 1px solid var(--marca);
+  border-radius: var(--r-l);
+  padding: 18px;
+  box-shadow: var(--sombra);
+}
+
+.reservar h2 {
+  margin: 0;
+}
+
+.habitaciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.habitaciones li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-m);
+}
+
+.habitaciones strong {
+  display: block;
+}
+
+/* ---------- Tipos y tarifas ---------- */
+
+.tipo,
+.resena {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-l);
+  padding: 16px;
+}
+
+.tipo h3,
+.tipo p {
+  margin: 0;
+}
+
+.tarifas {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarifas li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-top: 1px solid var(--borde);
+}
+
+.tarifas small {
+  display: block;
+  font-size: 0.72rem;
+}
+
+/* ---------- Política y reseñas ---------- */
+
+.politica {
+  background: var(--superficie-2);
+  border-radius: var(--r-l);
+  padding: 18px;
+}
+
+.politica h2 {
+  margin-top: 0;
+}
+
+.politica ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.resena p {
+  margin: 0;
+}
+
+.respuesta {
+  border-left: 3px solid var(--marca);
+  padding-left: 12px;
+}
+
+.respuesta p {
+  margin: 2px 0 0;
+}
+
+/* ---------- Carga ---------- */
+
+.cargando {
+  display: grid;
+  gap: 12px;
+}
+
+.esqueleto {
+  border-radius: var(--r-l);
+  background: linear-gradient(90deg, var(--superficie-2), var(--superficie), var(--superficie-2));
+  background-size: 200% 100%;
+  animation: brillo 1.3s linear infinite;
+}
+
+.esqueleto.alto {
+  aspect-ratio: 21 / 9;
+}
+
+.esqueleto.bajo {
+  height: 120px;
+}
+
+@keyframes brillo {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}
+
+/* ---------- Pestañas de tipos ---------- */
+
+.pestanas {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.pestanas button {
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--r-s) var(--r-s) 0 0;
+  background: var(--superficie-2);
+  color: var(--texto);
+  font-weight: 400;
+  padding: 10px 20px;
+}
+
+.pestanas button.activa {
+  background: var(--marca-solida);
+  color: #fff;
+}
+
+.pestanas + .tipo {
+  margin-top: -16px;
+  border: none;
+  border-radius: 0 var(--r-s) var(--r-s) var(--r-s);
+  box-shadow: var(--sombra);
+}
+
+.tarifas strong {
+  color: var(--marca);
+}
