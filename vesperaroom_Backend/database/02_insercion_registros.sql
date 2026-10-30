@@ -8,7 +8,7 @@
 --              (almacenada como hash BCrypt, igual que la aplicación).
 -- =============================================================================
 
-USE motelnow;
+USE vesperaroom;
 
 -- -----------------------------------------------------------------------------
 -- Catálogos geográficos

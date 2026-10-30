@@ -1,6 +1,6 @@
 # Scripts de base de datos — VesperaRoom
 
-RDBMS: **MySQL 8.x**. Base de datos: `motelnow`. Modelo normalizado a **3FN** con **19 tablas**.
+RDBMS: **MySQL 8.x**. Base de datos: `vesperaroom`. Modelo normalizado a **3FN** con **19 tablas**.
 
 ## Base nueva (desde cero)
 

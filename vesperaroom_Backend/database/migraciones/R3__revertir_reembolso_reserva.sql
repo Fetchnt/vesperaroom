@@ -6,7 +6,7 @@
 -- Ejecutar como root:  mysql -u root -p < R3__revertir_reembolso_reserva.sql
 -- =============================================================================
 
-USE motelnow;
+USE vesperaroom;
 
 ALTER TABLE reserva
 	DROP CHECK ck_reserva_reembolso,

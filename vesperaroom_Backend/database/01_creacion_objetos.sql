@@ -1,17 +1,17 @@
 
 -- VesperaRoom - Script de creación de objetos
 -- RDBMS: MySQL 8.x
--- Descripción: crea la base de datos motelnow con las 19 tablas del modelo
+-- Descripción: crea la base de datos vesperaroom con las 19 tablas del modelo
 --              normalizado a tercera forma normal (3FN).
 --              ADVERTENCIA: borra las tablas existentes y sus datos. Para
 --              actualizar una base que ya tiene datos use los scripts de la
 --              carpeta migraciones/.
 
-CREATE DATABASE IF NOT EXISTS motelnow
+CREATE DATABASE IF NOT EXISTS vesperaroom
 	CHARACTER SET utf8mb4
 	COLLATE utf8mb4_spanish_ci;
 
-USE motelnow;
+USE vesperaroom;
 
 -- Borrado en orden inverso a las dependencias (primero las tablas hijas)
 DROP TABLE IF EXISTS respuesta_propietario;

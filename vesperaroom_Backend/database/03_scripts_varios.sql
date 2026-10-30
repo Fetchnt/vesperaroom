@@ -10,10 +10,10 @@
 -- DB_PASSWORD en .env.properties. Solo recibe permisos de datos (DML).
 -- -----------------------------------------------------------------------------
 -- CREATE USER IF NOT EXISTS 'usuario'@'%' IDENTIFIED BY '<contrasena_segura>';
--- GRANT SELECT, INSERT, UPDATE, DELETE ON motelnow.* TO 'usuario'@'%';
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON vesperaroom.* TO 'usuario'@'%';
 -- FLUSH PRIVILEGES;
 
-USE motelnow;
+USE vesperaroom;
 
 -- -----------------------------------------------------------------------------
 -- Vista: detalle legible de cada reserva (une 6 tablas). Las vistas no guardan

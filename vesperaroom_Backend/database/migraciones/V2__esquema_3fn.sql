@@ -1,7 +1,7 @@
 -- =============================================================================
 -- VesperaRoom - Migración V2: esquema normalizado a 3FN
 -- RDBMS: MySQL 8.x
--- Descripción: agrega las 18 tablas nuevas a una base motelnow que ya tiene la
+-- Descripción: agrega las 18 tablas nuevas a una base vesperaroom que ya tiene la
 --              tabla usuario (estado V1). No borra ni modifica datos existentes:
 --              usa CREATE TABLE IF NOT EXISTS, así que puede ejecutarse dos veces.
 --              También carga los catálogos base (departamentos, ciudades,
@@ -10,7 +10,7 @@
 -- Revertir:            R2__revertir_esquema_3fn.sql
 -- =============================================================================
 
-USE motelnow;
+USE vesperaroom;
 
 -- -----------------------------------------------------------------------------
 -- Tabla: DEPARTAMENTO
