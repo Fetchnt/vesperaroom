@@ -9,7 +9,7 @@
 -- Ejecutar como root:  mysql -u root -p < V3__reembolso_reserva.sql
 -- =============================================================================
 
-USE motelnow;
+USE vesperaroom;
 
 ALTER TABLE reserva
 	ADD COLUMN fecha_cancelacion       DATETIME        NULL AFTER total,

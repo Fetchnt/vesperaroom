@@ -7,11 +7,11 @@
 -- Ejecutar como root:  mysql -u root -p < V1__usuario.sql
 -- =============================================================================
 
-CREATE DATABASE IF NOT EXISTS motelnow
+CREATE DATABASE IF NOT EXISTS vesperaroom
 	CHARACTER SET utf8mb4
 	COLLATE utf8mb4_spanish_ci;
 
-USE motelnow;
+USE vesperaroom;
 
 -- -----------------------------------------------------------------------------
 -- Tabla: USUARIO
