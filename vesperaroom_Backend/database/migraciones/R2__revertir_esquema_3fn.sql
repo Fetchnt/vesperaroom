@@ -7,7 +7,7 @@
 -- Ejecutar como root:  mysql -u root -p < R2__revertir_esquema_3fn.sql
 -- =============================================================================
 
-USE motelnow;
+USE vesperaroom;
 
 -- Orden inverso a las dependencias: primero las tablas hijas
 DROP TABLE IF EXISTS respuesta_propietario;
