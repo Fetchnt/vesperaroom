@@ -44,6 +44,7 @@ export class App {
           { ruta: '/admin/catalogos', texto: 'Catálogos' },
           { ruta: '/admin/reservas', texto: 'Reservas' },
           { ruta: '/admin/pagos', texto: 'Pagos' },
+          { ruta: '/admin/resenas', texto: 'Reseñas' },
           { ruta: '/mi-cuenta', texto: 'Mi cuenta' },
         ];
       default:

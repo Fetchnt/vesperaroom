@@ -1,6 +1,11 @@
-import { Component, inject } from '@angular/core';
-import { PerfilPropietarioApi } from '../../core/api/entidades';
-import { TablaCrud, type AccionFila, type Campo } from '../../shared/tabla-crud';
+import { Component, computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { PerfilPropietarioApi, UsuarioApi } from '../../core/api/entidades';
+import type { PerfilPropietario, TipoCuenta } from '../../core/api/models';
+import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { lista } from '../../shared/recursos';
+
+const TIPOS_CUENTA: TipoCuenta[] = ['AHORROS', 'CORRIENTE'];
 
 @Component({
   selector: 'app-propietarios',
@@ -14,10 +19,12 @@ import { TablaCrud, type AccionFila, type Campo } from '../../shared/tabla-crud'
 
     <app-tabla-crud
       titulo="Perfiles"
+      descripcion="Cada usuario con rol propietario tiene como máximo un perfil."
       claveId="idUsuario"
       sinDatos="No hay perfiles de propietario registrados."
-      [campos]="campos"
+      [campos]="campos()"
       [cargar]="cargar"
+      [guardar]="guardar"
       [borrar]="borrar"
       [acciones]="acciones"
     />
@@ -25,18 +32,46 @@ import { TablaCrud, type AccionFila, type Campo } from '../../shared/tabla-crud'
 })
 export class Propietarios {
   private readonly api = inject(PerfilPropietarioApi);
+  private readonly usuarioApi = inject(UsuarioApi);
 
-  protected readonly campos: Campo[] = [
-    { clave: 'idUsuario', etiqueta: 'Usuario' },
-    { clave: 'razonSocial', etiqueta: 'Razón social' },
-    { clave: 'nit', etiqueta: 'NIT' },
-    { clave: 'banco', etiqueta: 'Banco' },
-    { clave: 'tipoCuenta', etiqueta: 'Tipo de cuenta' },
-    { clave: 'numeroCuenta', etiqueta: 'Cuenta' },
-    { clave: 'fechaVerificacion', etiqueta: 'Verificado' },
-  ];
+  private readonly propietarios = rxResource({
+    stream: () => this.usuarioApi.propietarios(),
+    defaultValue: [],
+  });
+
+  protected readonly campos = computed<Campo[]>(() => [
+    {
+      clave: 'idUsuario',
+      etiqueta: 'Usuario',
+      tipo: 'select',
+      requerido: true,
+      opciones: lista(this.propietarios).map((u) => ({
+        valor: u.idUsuario!,
+        texto: `${u.nombre} ${u.apellido} (${u.correo})`,
+      })),
+    },
+    { clave: 'razonSocial', etiqueta: 'Razón social', requerido: true },
+    { clave: 'nit', etiqueta: 'NIT', requerido: true },
+    { clave: 'banco', etiqueta: 'Banco', requerido: true },
+    {
+      clave: 'tipoCuenta',
+      etiqueta: 'Tipo de cuenta',
+      tipo: 'select',
+      requerido: true,
+      opciones: TIPOS_CUENTA.map((t) => ({
+        valor: t,
+        texto: t === 'AHORROS' ? 'Ahorros' : 'Corriente',
+      })),
+    },
+    { clave: 'numeroCuenta', etiqueta: 'Cuenta', requerido: true },
+    { clave: 'fechaVerificacion', etiqueta: 'Verificado', soloLectura: true },
+  ]);
 
   protected readonly cargar = () => this.api.crud.getAll();
+  protected readonly guardar = (id: number | string | null, dto: Registro) =>
+    id === null
+      ? this.api.crud.crear(dto as unknown as PerfilPropietario)
+      : this.api.crud.actualizar(id, dto as unknown as PerfilPropietario);
   protected readonly borrar = (id: number | string) => this.api.crud.eliminar(id);
 
   protected readonly acciones: AccionFila[] = [

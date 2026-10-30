@@ -6,10 +6,13 @@ import type { EstadoReserva } from '../../core/api/models';
 import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 import { lista } from '../../shared/recursos';
 
-/** Transiciones que admite el backend (ReservaService.cambiarEstado). */
+/**
+ * Transiciones que admite el backend (ReservaService.cambiarEstado). Pasar a
+ * CANCELADA desde aquí cancela con reembolso del 100 %.
+ */
 const SIGUIENTES: Partial<Record<EstadoReserva, EstadoReserva[]>> = {
-  PENDIENTE: ['CONFIRMADA'],
-  CONFIRMADA: ['EN_CURSO', 'NO_SHOW'],
+  PENDIENTE: ['CONFIRMADA', 'CANCELADA'],
+  CONFIRMADA: ['EN_CURSO', 'NO_SHOW', 'CANCELADA'],
   EN_CURSO: ['FINALIZADA'],
 };
 
@@ -18,6 +21,7 @@ const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
   { estado: 'EN_CURSO', texto: 'Marcar en curso' },
   { estado: 'FINALIZADA', texto: 'Finalizar' },
   { estado: 'NO_SHOW', texto: 'No se presentó' },
+  { estado: 'CANCELADA', texto: 'Cancelar' },
 ];
 
 @Component({
@@ -66,7 +70,9 @@ export class ReservasMotel {
   });
 
   /** Se preselecciona el primer motel en cuanto llega la lista. */
-  protected readonly motel = linkedSignal<number | null>(() => lista(this.moteles)[0]?.idMotel ?? null);
+  protected readonly motel = linkedSignal<number | null>(
+    () => lista(this.moteles)[0]?.idMotel ?? null,
+  );
 
   protected readonly campos: Campo[] = [
     { clave: 'codigoReserva', etiqueta: 'Código' },
@@ -85,8 +91,14 @@ export class ReservasMotel {
 
   protected readonly acciones: AccionFila[] = ACCIONES.map(({ estado, texto }) => ({
     texto,
-    visible: (fila: Registro) => (SIGUIENTES[fila['estado'] as EstadoReserva] ?? []).includes(estado),
-    peligro: estado === 'NO_SHOW',
-    ejecutar: (fila: Registro) => this.reservaApi.cambiarEstado(fila['idReserva'] as number, estado),
+    visible: (fila: Registro) =>
+      (SIGUIENTES[fila['estado'] as EstadoReserva] ?? []).includes(estado),
+    peligro: estado === 'NO_SHOW' || estado === 'CANCELADA',
+    confirmar:
+      estado === 'CANCELADA'
+        ? '¿Cancelar esta reserva? Al cliente se le reembolsa el 100 % de lo pagado.'
+        : undefined,
+    ejecutar: (fila: Registro) =>
+      this.reservaApi.cambiarEstado(fila['idReserva'] as number, estado),
   }));
 }

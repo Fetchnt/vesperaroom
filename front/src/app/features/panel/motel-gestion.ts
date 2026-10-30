@@ -24,10 +24,12 @@ import type {
   TipoDia,
   TipoHabitacion,
 } from '../../core/api/models';
+import { SessionStore } from '../../core/auth/session';
 import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 import { lista, valorDe } from '../../shared/recursos';
 
-type Seccion = 'politica' | 'tipos' | 'caracteristicas' | 'habitaciones' | 'tarifas' | 'servicios' | 'fotos';
+type Seccion =
+  'politica' | 'tipos' | 'caracteristicas' | 'habitaciones' | 'tarifas' | 'servicios' | 'fotos';
 
 const SECCIONES: { clave: Seccion; texto: string }[] = [
   { clave: 'politica', texto: 'Política' },
@@ -50,7 +52,11 @@ const ESTADOS_HABITACION: EstadoHabitacion[] = ['ACTIVA', 'MANTENIMIENTO', 'FUER
       <div>
         <h1>{{ valorDe(motel, null)?.nombre ?? 'Motel' }}</h1>
         <p class="suave pequeno">
-          <a routerLink="/panel/moteles">← Mis moteles</a>
+          @if (esAdmin()) {
+            <a routerLink="/admin/moteles">← Moteles</a>
+          } @else {
+            <a routerLink="/panel/moteles">← Mis moteles</a>
+          }
         </p>
       </div>
     </div>
@@ -73,6 +79,7 @@ const ESTADOS_HABITACION: EstadoHabitacion[] = ['ACTIVA', 'MANTENIMIENTO', 'FUER
           [campos]="camposPolitica"
           [cargar]="cargarPolitica()"
           [guardar]="guardarPolitica"
+          [borrar]="borrarPolitica"
           [porDefecto]="porDefecto()"
         />
       }
@@ -97,7 +104,11 @@ const ESTADOS_HABITACION: EstadoHabitacion[] = ['ACTIVA', 'MANTENIMIENTO', 'FUER
           } @else {
             <label class="campo" style="max-width:320px">
               <span>Tipo</span>
-              <select name="tipo" [ngModel]="tipoElegido()" (ngModelChange)="tipoElegido.set($event)">
+              <select
+                name="tipo"
+                [ngModel]="tipoElegido()"
+                (ngModelChange)="tipoElegido.set($event)"
+              >
                 @for (t of lista(tipos); track t.idTipo) {
                   <option [ngValue]="t.idTipo">{{ t.nombre }}</option>
                 }
@@ -220,8 +231,12 @@ const ESTADOS_HABITACION: EstadoHabitacion[] = ['ACTIVA', 'MANTENIMIENTO', 'FUER
 export class MotelGestion {
   protected readonly lista = lista;
   protected readonly valorDe = valorDe;
-  /** :id de la ruta /panel/moteles/:id. */
+  /** :id de la ruta /panel/moteles/:id o /admin/moteles/:id. */
   readonly id = input.required<string>();
+
+  /** El administrador entra por /admin/moteles/:id y vuelve a su listado. */
+  private readonly sesion = inject(SessionStore);
+  protected readonly esAdmin = computed(() => this.sesion.rol() === 'ADMINISTRADOR');
 
   private readonly motelApi = inject(MotelApi);
   private readonly politicaApi = inject(PoliticaApi);
@@ -268,12 +283,37 @@ export class MotelGestion {
   // ---------- Política ----------
 
   protected readonly camposPolitica: Campo[] = [
-    { clave: 'anticipacionMinimaHoras', etiqueta: 'Anticipación mínima (h)', tipo: 'numero', requerido: true },
-    { clave: 'capacidadMaxSinRecargo', etiqueta: 'Capacidad sin recargo', tipo: 'numero', requerido: true },
-    { clave: 'tarifaPersonaAdicional', etiqueta: 'Persona adicional', tipo: 'decimal', requerido: true },
-    { clave: 'diasHabilesDevolucion', etiqueta: 'Días hábiles de devolución', tipo: 'numero', requerido: true },
+    {
+      clave: 'anticipacionMinimaHoras',
+      etiqueta: 'Anticipación mínima (h)',
+      tipo: 'numero',
+      requerido: true,
+    },
+    {
+      clave: 'capacidadMaxSinRecargo',
+      etiqueta: 'Capacidad sin recargo',
+      tipo: 'numero',
+      requerido: true,
+    },
+    {
+      clave: 'tarifaPersonaAdicional',
+      etiqueta: 'Persona adicional',
+      tipo: 'decimal',
+      requerido: true,
+    },
+    {
+      clave: 'diasHabilesDevolucion',
+      etiqueta: 'Días hábiles de devolución',
+      tipo: 'numero',
+      requerido: true,
+    },
     { clave: 'porcentajeReembolso', etiqueta: 'Reembolso (%)', tipo: 'numero', requerido: true },
-    { clave: 'tiempoGraciaNoShowMin', etiqueta: 'Gracia no-show (min)', tipo: 'numero', requerido: true },
+    {
+      clave: 'tiempoGraciaNoShowMin',
+      etiqueta: 'Gracia no-show (min)',
+      tipo: 'numero',
+      requerido: true,
+    },
     { clave: 'aceptaReembolso', etiqueta: 'Acepta reembolso', soloLectura: true },
   ];
 
@@ -288,6 +328,9 @@ export class MotelGestion {
       ? this.politicaApi.crud.crear(politica)
       : this.politicaApi.crud.actualizar(this.idMotel(), politica);
   };
+
+  /** Sin política el motel deja de recibir reservas nuevas. */
+  protected readonly borrarPolitica = (id: number | string) => this.politicaApi.crud.eliminar(id);
 
   // ---------- Tipos ----------
 
@@ -304,14 +347,18 @@ export class MotelGestion {
 
   protected readonly guardarTipo = (idFila: number | string | null, dto: Registro) => {
     const tipo = { ...dto, idMotel: this.idMotel() } as unknown as TipoHabitacion;
-    return idFila === null ? this.tipoApi.crud.crear(tipo) : this.tipoApi.crud.actualizar(idFila, tipo);
+    return idFila === null
+      ? this.tipoApi.crud.crear(tipo)
+      : this.tipoApi.crud.actualizar(idFila, tipo);
   };
 
   protected readonly borrarTipo = (idFila: number | string) => this.tipoApi.crud.eliminar(idFila);
 
   // ---------- Características del tipo ----------
 
-  protected readonly tipoElegido = linkedSignal<number | null>(() => lista(this.tipos)[0]?.idTipo ?? null);
+  protected readonly tipoElegido = linkedSignal<number | null>(
+    () => lista(this.tipos)[0]?.idTipo ?? null,
+  );
   protected readonly trabajando = signal(false);
   protected readonly mensaje = signal('');
   protected readonly error = signal('');
@@ -386,14 +433,21 @@ export class MotelGestion {
       : this.habitacionApi.crud.actualizar(idFila, habitacion);
   };
 
-  protected readonly borrarHabitacion = (idFila: number | string) => this.habitacionApi.crud.eliminar(idFila);
+  protected readonly borrarHabitacion = (idFila: number | string) =>
+    this.habitacionApi.crud.eliminar(idFila);
 
   /** /habitacion/updateestado: el estado no viaja por updatejson. */
   protected readonly accionesHabitacion: AccionFila[] = ESTADOS_HABITACION.map((estado) => ({
-    texto: estado === 'ACTIVA' ? 'Activar' : estado === 'MANTENIMIENTO' ? 'Mantenimiento' : 'Fuera de servicio',
+    texto:
+      estado === 'ACTIVA'
+        ? 'Activar'
+        : estado === 'MANTENIMIENTO'
+          ? 'Mantenimiento'
+          : 'Fuera de servicio',
     visible: (fila: Registro) => fila['estado'] !== estado,
     peligro: estado === 'FUERA_DE_SERVICIO',
-    ejecutar: (fila: Registro) => this.habitacionApi.cambiarEstado(fila['idHabitacion'] as number, estado),
+    ejecutar: (fila: Registro) =>
+      this.habitacionApi.cambiarEstado(fila['idHabitacion'] as number, estado),
   }));
 
   // ---------- Tarifas ----------
@@ -431,15 +485,17 @@ export class MotelGestion {
   protected readonly cargarTarifas = computed(() => {
     const id = this.idMotel();
     return () =>
-      this.tipoApi.porMotel(id).pipe(
-        switchMap((tipos) =>
-          tipos.length === 0
-            ? of<Tarifa[]>([])
-            : forkJoin(tipos.map((t) => this.tarifaApi.porTipo(t.idTipo!))).pipe(
-                map((listas) => listas.flat()),
-              ),
-        ),
-      );
+      this.tipoApi
+        .porMotel(id)
+        .pipe(
+          switchMap((tipos) =>
+            tipos.length === 0
+              ? of<Tarifa[]>([])
+              : forkJoin(tipos.map((t) => this.tarifaApi.porTipo(t.idTipo!))).pipe(
+                  map((listas) => listas.flat()),
+                ),
+          ),
+        );
   });
 
   protected readonly guardarTarifa = (idFila: number | string | null, dto: Registro) => {
@@ -449,7 +505,8 @@ export class MotelGestion {
       : this.tarifaApi.crud.actualizar(idFila, tarifa);
   };
 
-  protected readonly borrarTarifa = (idFila: number | string) => this.tarifaApi.crud.eliminar(idFila);
+  protected readonly borrarTarifa = (idFila: number | string) =>
+    this.tarifaApi.crud.eliminar(idFila);
 
   // ---------- Servicios ----------
 
@@ -472,7 +529,8 @@ export class MotelGestion {
       : this.servicioApi.crud.actualizar(idFila, servicio);
   };
 
-  protected readonly borrarServicio = (idFila: number | string) => this.servicioApi.crud.eliminar(idFila);
+  protected readonly borrarServicio = (idFila: number | string) =>
+    this.servicioApi.crud.eliminar(idFila);
 
   // ---------- Fotos ----------
 
@@ -506,7 +564,9 @@ export class MotelGestion {
       idMotel: idHabitacion === null ? this.idMotel() : null,
     } as unknown as Foto;
 
-    return idFila === null ? this.fotoApi.crud.crear(foto) : this.fotoApi.crud.actualizar(idFila, foto);
+    return idFila === null
+      ? this.fotoApi.crud.crear(foto)
+      : this.fotoApi.crud.actualizar(idFila, foto);
   };
 
   protected readonly borrarFoto = (idFila: number | string) => this.fotoApi.crud.eliminar(idFila);

@@ -54,8 +54,8 @@ type ReservaDetallada = Reserva & {
               <div>
                 <h2>{{ r.codigoReserva }}</h2>
                 <p class="suave pequeno">
-                  {{ r.fechaHoraInicio | date: 'medium' }} → {{ r.fechaHoraFin | date: 'shortTime' }} ·
-                  {{ r.cantidadPersonas }} personas
+                  {{ r.fechaHoraInicio | date: 'medium' }} →
+                  {{ r.fechaHoraFin | date: 'shortTime' }} · {{ r.cantidadPersonas }} personas
                 </p>
               </div>
               <div class="derecha">
@@ -100,11 +100,17 @@ type ReservaDetallada = Reserva & {
                   </label>
                   <label class="campo">
                     <span>Referencia (opcional)</span>
-                    <input name="referencia" [ngModel]="referencia()" (ngModelChange)="referencia.set($event)" />
+                    <input
+                      name="referencia"
+                      [ngModel]="referencia()"
+                      (ngModelChange)="referencia.set($event)"
+                    />
                   </label>
                   <div class="fila">
                     <button type="submit" class="primario" [disabled]="trabajando()">Pagar</button>
-                    <button type="button" class="plano" (click)="pagando.set(null)">Cancelar</button>
+                    <button type="button" class="plano" (click)="pagando.set(null)">
+                      Cancelar
+                    </button>
                   </div>
                 </form>
               } @else {
@@ -115,51 +121,67 @@ type ReservaDetallada = Reserva & {
             }
 
             <!-- Reseña -->
-            @if (r.resena; as resena) {
+            @if (resenando() === r.idReserva) {
+              <form class="pila" (ngSubmit)="dejarResena(r)">
+                <div class="formulario">
+                  <label class="campo">
+                    <span>Calificación</span>
+                    <select
+                      name="calificacion"
+                      [ngModel]="calificacion()"
+                      (ngModelChange)="calificacion.set($event)"
+                    >
+                      @for (n of [1, 2, 3, 4, 5]; track n) {
+                        <option [ngValue]="n">{{ n }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+                <label class="campo">
+                  <span>Comentario</span>
+                  <textarea
+                    name="comentario"
+                    [ngModel]="comentario()"
+                    (ngModelChange)="comentario.set($event)"
+                  ></textarea>
+                </label>
+                <div class="fila">
+                  <button type="submit" class="primario" [disabled]="trabajando()">
+                    {{ r.resena ? 'Guardar cambios' : 'Publicar reseña' }}
+                  </button>
+                  <button type="button" class="plano" (click)="resenando.set(null)">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            } @else if (r.resena; as resena) {
               <div class="fila">
                 <app-estrellas [valor]="resena.calificacion" [mostrarValor]="false" />
                 <span class="pequeno suave">{{ resena.comentario }}</span>
+                <button type="button" class="plano" (click)="abrirResena(r)">Editar</button>
+                <button
+                  type="button"
+                  class="plano peligro"
+                  [disabled]="trabajando()"
+                  (click)="borrarResena(resena)"
+                >
+                  Eliminar
+                </button>
               </div>
             } @else if (r.estado === 'FINALIZADA') {
-              @if (resenando() === r.idReserva) {
-                <form class="pila" (ngSubmit)="dejarResena(r)">
-                  <div class="formulario">
-                    <label class="campo">
-                      <span>Calificación</span>
-                      <select
-                        name="calificacion"
-                        [ngModel]="calificacion()"
-                        (ngModelChange)="calificacion.set($event)"
-                      >
-                        @for (n of [1, 2, 3, 4, 5]; track n) {
-                          <option [ngValue]="n">{{ n }}</option>
-                        }
-                      </select>
-                    </label>
-                  </div>
-                  <label class="campo">
-                    <span>Comentario</span>
-                    <textarea
-                      name="comentario"
-                      [ngModel]="comentario()"
-                      (ngModelChange)="comentario.set($event)"
-                    ></textarea>
-                  </label>
-                  <div class="fila">
-                    <button type="submit" class="primario" [disabled]="trabajando()">Publicar reseña</button>
-                    <button type="button" class="plano" (click)="resenando.set(null)">Cancelar</button>
-                  </div>
-                </form>
-              } @else {
-                <div class="fila">
-                  <button type="button" (click)="abrirResena(r)">Dejar reseña</button>
-                </div>
-              }
+              <div class="fila">
+                <button type="button" (click)="abrirResena(r)">Dejar reseña</button>
+              </div>
             }
 
             @if (vigente(r)) {
               <div class="fila">
-                <button type="button" class="peligro" [disabled]="trabajando()" (click)="cancelar(r)">
+                <button
+                  type="button"
+                  class="peligro"
+                  [disabled]="trabajando()"
+                  (click)="cancelar(r)"
+                >
                   Cancelar reserva
                 </button>
               </div>
@@ -234,10 +256,11 @@ export class MisReservas {
     this.limpiarAvisos();
   }
 
-  protected abrirResena(r: Reserva): void {
+  /** Abre el formulario vacío, o con la reseña actual si ya existe. */
+  protected abrirResena(r: ReservaDetallada): void {
     this.resenando.set(r.idReserva ?? null);
-    this.calificacion.set(5);
-    this.comentario.set('');
+    this.calificacion.set(r.resena?.calificacion ?? 5);
+    this.comentario.set(r.resena?.comentario ?? '');
     this.limpiarAvisos();
   }
 
@@ -260,18 +283,34 @@ export class MisReservas {
     if (this.trabajando()) {
       return;
     }
+    const resena: Resena = {
+      idReserva: r.idReserva!,
+      calificacion: Number(this.calificacion()),
+      comentario: this.comentario().trim() || undefined,
+    };
     this.ejecutar(
-      this.resenaApi.crud.crear({
-        idReserva: r.idReserva!,
-        calificacion: Number(this.calificacion()),
-        comentario: this.comentario().trim() || undefined,
-      }),
+      r.resena
+        ? this.resenaApi.crud.actualizar(r.resena.idResena!, resena)
+        : this.resenaApi.crud.crear(resena),
       () => this.resenando.set(null),
     );
   }
 
+  protected borrarResena(resena: Resena): void {
+    if (
+      this.trabajando() ||
+      !confirm('¿Eliminar tu reseña? También se borra la respuesta del motel, si la hay.')
+    ) {
+      return;
+    }
+    this.ejecutar(this.resenaApi.crud.eliminar(resena.idResena!));
+  }
+
   protected cancelar(r: ReservaDetallada): void {
-    if (this.trabajando() || !confirm('¿Cancelar esta reserva? El reembolso depende de la política del motel.')) {
+    if (
+      this.trabajando() ||
+      !confirm('¿Cancelar esta reserva? El reembolso depende de la política del motel.')
+    ) {
       return;
     }
     this.ejecutar(this.reservaApi.cancelar(r.idReserva!));
