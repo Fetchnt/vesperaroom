@@ -69,7 +69,12 @@ import { lista, valorDe } from '../../shared/recursos';
 
             <label class="campo">
               <span>Modalidad y tarifa</span>
-              <select name="tarifa" required [ngModel]="idTarifa()" (ngModelChange)="idTarifa.set($event)">
+              <select
+                name="tarifa"
+                required
+                [ngModel]="idTarifa()"
+                (ngModelChange)="idTarifa.set($event)"
+              >
                 <option [ngValue]="null">— Seleccione —</option>
                 @for (t of d.tarifas; track t.idTarifa) {
                   <option [ngValue]="t.idTarifa">
@@ -82,7 +87,9 @@ import { lista, valorDe } from '../../shared/recursos';
           </div>
 
           @if (d.tarifas.length === 0) {
-            <p class="aviso mal">Esta habitación no tiene tarifas publicadas; no se puede reservar.</p>
+            <p class="aviso mal">
+              Esta habitación no tiene tarifas publicadas; no se puede reservar.
+            </p>
           }
 
           @if (d.servicios.length > 0) {
@@ -92,7 +99,9 @@ import { lista, valorDe } from '../../shared/recursos';
                 <label class="servicio">
                   <span class="crece">
                     {{ s.nombre }}
-                    <small class="suave">{{ s.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</small>
+                    <small class="suave">{{
+                      s.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+                    }}</small>
                   </span>
                   <input
                     type="number"
@@ -110,7 +119,9 @@ import { lista, valorDe } from '../../shared/recursos';
           <div class="fila entre resumen">
             <div>
               <span class="suave pequeno">Total estimado</span>
-              <strong class="total">{{ total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
+              <strong class="total">{{
+                total() | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+              }}</strong>
               <p class="pequeno suave">
                 El servidor recalcula el total y la hora de salida al crear la reserva.
               </p>
@@ -164,7 +175,8 @@ export class Reservar {
   protected readonly valorDe = valorDe;
   /** :idHabitacion de la ruta, y el inicio sugerido que trae el buscador. */
   readonly idHabitacion = input.required<string>();
-  readonly inicioSugerido = input('', { alias: 'inicio' });
+  /** El router lo deja en undefined cuando la URL no trae ?inicio=, por ejemplo al recargar. */
+  readonly inicioSugerido = input<string | undefined>('', { alias: 'inicio' });
 
   private readonly habitacionApi = inject(HabitacionApi);
   private readonly tipoApi = inject(TipoHabitacionApi);
@@ -178,7 +190,7 @@ export class Reservar {
   protected readonly legible = legible;
 
   /** El input datetime-local no admite segundos, así que se recortan. */
-  protected readonly inicio = linkedSignal(() => this.inicioSugerido().slice(0, 16));
+  protected readonly inicio = linkedSignal(() => (this.inicioSugerido() ?? '').slice(0, 16));
   protected readonly personas = signal(2);
   protected readonly idTarifa = signal<number | null>(null);
   protected readonly cantidades = signal<Record<number, number>>({});
@@ -223,12 +235,19 @@ export class Reservar {
   protected readonly total = computed(() => {
     const datos = valorDe(this.datos, null);
     const tarifa = datos?.tarifas.find((t) => t.idTarifa === this.idTarifa());
-    return totalEstimado(tarifa?.precio ?? 0, this.elegidos(), this.personas(), datos?.politica ?? null);
+    return totalEstimado(
+      tarifa?.precio ?? 0,
+      this.elegidos(),
+      this.personas(),
+      datos?.politica ?? null,
+    );
   });
 
   protected nombreModalidad(idModalidad: number): string {
     const modalidad = lista(this.modalidades).find((m) => m.idModalidad === idModalidad);
-    return modalidad ? `${modalidad.nombre} (${modalidad.duracionHoras} h)` : `Modalidad ${idModalidad}`;
+    return modalidad
+      ? `${modalidad.nombre} (${modalidad.duracionHoras} h)`
+      : `Modalidad ${idModalidad}`;
   }
 
   protected cantidadDe(servicio: ServicioAdicional): number {
@@ -236,7 +255,10 @@ export class Reservar {
   }
 
   protected ponerCantidad(servicio: ServicioAdicional, cantidad: number): void {
-    this.cantidades.update((actual) => ({ ...actual, [servicio.idServicio!]: Number(cantidad) || 0 }));
+    this.cantidades.update((actual) => ({
+      ...actual,
+      [servicio.idServicio!]: Number(cantidad) || 0,
+    }));
   }
 
   protected enviar(): void {

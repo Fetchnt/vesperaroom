@@ -3,10 +3,13 @@ import { ReservaApi } from '../../core/api/entidades';
 import type { EstadoReserva } from '../../core/api/models';
 import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 
-/** Mismas transiciones que valida ReservaService.cambiarEstado. */
+/**
+ * Mismas transiciones que valida ReservaService.cambiarEstado. Pasar a
+ * CANCELADA desde aquí cancela con reembolso del 100 %.
+ */
 const SIGUIENTES: Partial<Record<EstadoReserva, EstadoReserva[]>> = {
-  PENDIENTE: ['CONFIRMADA'],
-  CONFIRMADA: ['EN_CURSO', 'NO_SHOW'],
+  PENDIENTE: ['CONFIRMADA', 'CANCELADA'],
+  CONFIRMADA: ['EN_CURSO', 'NO_SHOW', 'CANCELADA'],
   EN_CURSO: ['FINALIZADA'],
 };
 
@@ -15,6 +18,7 @@ const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
   { estado: 'EN_CURSO', texto: 'En curso' },
   { estado: 'FINALIZADA', texto: 'Finalizar' },
   { estado: 'NO_SHOW', texto: 'No se presentó' },
+  { estado: 'CANCELADA', texto: 'Cancelar' },
 ];
 
 @Component({
@@ -22,7 +26,9 @@ const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
   imports: [TablaCrud],
   template: `
     <h1>Reservas</h1>
-    <p class="suave">Todas las reservas del sistema, con su estado y su reembolso si fueron canceladas.</p>
+    <p class="suave">
+      Todas las reservas del sistema, con su estado y su reembolso si fueron canceladas.
+    </p>
 
     <app-tabla-crud
       titulo="Reservas"
@@ -55,8 +61,13 @@ export class ReservasAdmin {
 
   protected readonly acciones: AccionFila[] = ACCIONES.map(({ estado, texto }) => ({
     texto,
-    visible: (fila: Registro) => (SIGUIENTES[fila['estado'] as EstadoReserva] ?? []).includes(estado),
-    peligro: estado === 'NO_SHOW',
+    visible: (fila: Registro) =>
+      (SIGUIENTES[fila['estado'] as EstadoReserva] ?? []).includes(estado),
+    peligro: estado === 'NO_SHOW' || estado === 'CANCELADA',
+    confirmar:
+      estado === 'CANCELADA'
+        ? '¿Cancelar esta reserva? Al cliente se le reembolsa el 100 % de lo pagado.'
+        : undefined,
     ejecutar: (fila: Registro) => this.api.cambiarEstado(fila['idReserva'] as number, estado),
   }));
 }

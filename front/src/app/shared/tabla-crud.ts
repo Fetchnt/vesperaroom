@@ -6,7 +6,8 @@ import type { Id } from '../core/api/api';
 import { EstadoBadge } from './estado-badge';
 import { legible } from './etiquetas';
 
-export type TipoCampo = 'texto' | 'numero' | 'decimal' | 'fecha' | 'fechaHora' | 'area' | 'select' | 'booleano';
+export type TipoCampo =
+  'texto' | 'numero' | 'decimal' | 'fecha' | 'fechaHora' | 'area' | 'select' | 'booleano';
 
 export interface Opcion {
   valor: string | number;
@@ -39,6 +40,8 @@ export interface AccionFila {
   ejecutar: (fila: Registro) => Observable<string>;
   visible?: (fila: Registro) => boolean;
   peligro?: boolean;
+  /** Pregunta que se muestra antes de ejecutar; sin ella la acción va directo. */
+  confirmar?: string;
 }
 
 /**
@@ -59,7 +62,12 @@ export interface AccionFila {
           }
         </div>
         @if (!soloLectura()) {
-          <button type="button" class="primario" (click)="nuevoRegistro()" [disabled]="formAbierto()">
+          <button
+            type="button"
+            class="primario"
+            (click)="nuevoRegistro()"
+            [disabled]="formAbierto()"
+          >
             Agregar
           </button>
         }
@@ -182,7 +190,9 @@ export interface AccionFila {
                         <button type="button" class="plano" (click)="editar(fila)">Editar</button>
                       }
                       @if (borrar()) {
-                        <button type="button" class="plano peligro" (click)="eliminar(fila)">Eliminar</button>
+                        <button type="button" class="plano peligro" (click)="eliminar(fila)">
+                          Eliminar
+                        </button>
                       }
                     </td>
                   }
@@ -237,7 +247,11 @@ export class TablaCrud {
 
   protected readonly soloLectura = computed(() => this.guardar() === null);
   protected readonly hayAcciones = computed(
-    () => !this.soloLectura() || this.borrar() !== null || this.enlace() !== null || this.acciones().length > 0,
+    () =>
+      !this.soloLectura() ||
+      this.borrar() !== null ||
+      this.enlace() !== null ||
+      this.acciones().length > 0,
   );
   protected readonly camposVisibles = computed(() => this.campos().filter((c) => !c.oculto));
   protected readonly camposEditables = computed(() => this.campos().filter((c) => !c.soloLectura));
@@ -303,7 +317,11 @@ export class TablaCrud {
       return String(valor);
     }
     if (campo.tipo === 'decimal') {
-      return Number(valor).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+      return Number(valor).toLocaleString('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0,
+      });
     }
     return typeof valor === 'string' && /^[A-Z_]{3,}$/.test(valor) ? legible(valor) : String(valor);
   }
@@ -317,7 +335,7 @@ export class TablaCrud {
   }
 
   protected ejecutarAccion(accion: AccionFila, fila: Registro): void {
-    if (this.ejecutando()) {
+    if (this.ejecutando() || (accion.confirmar && !confirm(accion.confirmar))) {
       return;
     }
 

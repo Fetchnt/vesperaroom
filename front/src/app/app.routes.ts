@@ -95,6 +95,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/moteles').then((m) => m.MotelesAdmin),
       },
       {
+        path: 'moteles/:id',
+        title: 'Gestión del motel · VesperaRoom',
+        loadComponent: () => import('./features/panel/motel-gestion').then((m) => m.MotelGestion),
+      },
+      {
+        path: 'resenas',
+        title: 'Reseñas · VesperaRoom',
+        loadComponent: () => import('./features/admin/resenas').then((m) => m.ResenasAdmin),
+      },
+      {
         path: 'catalogos',
         title: 'Catálogos · VesperaRoom',
         loadComponent: () => import('./features/admin/catalogos').then((m) => m.Catalogos),
