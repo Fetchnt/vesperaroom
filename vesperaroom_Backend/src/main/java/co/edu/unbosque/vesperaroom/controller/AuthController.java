@@ -16,12 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import co.edu.unbosque.vesperaroom.dto.AuthResponseDTO;
 import co.edu.unbosque.vesperaroom.dto.LoginDTO;
-import co.edu.unbosque.vesperaroom.dto.RecuperarDTO;
-import co.edu.unbosque.vesperaroom.dto.RestablecerDTO;
 import co.edu.unbosque.vesperaroom.dto.UsuarioDTO;
 import co.edu.unbosque.vesperaroom.entity.Usuario;
 import co.edu.unbosque.vesperaroom.security.JwtUtil;
-import co.edu.unbosque.vesperaroom.service.RecuperacionService;
 import co.edu.unbosque.vesperaroom.service.UsuarioService;
 import co.edu.unbosque.vesperaroom.util.RespuestaUsuario;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,14 +39,12 @@ public class AuthController {
 	private final AuthenticationManager authenticationManager;
 	private final JwtUtil jwtUtil;
 	private final UsuarioService usuarioService;
-	private final RecuperacionService recuperacionService;
 
 	public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil,
-			UsuarioService usuarioService, RecuperacionService recuperacionService) {
+			UsuarioService usuarioService) {
 		this.authenticationManager = authenticationManager;
 		this.jwtUtil = jwtUtil;
 		this.usuarioService = usuarioService;
-		this.recuperacionService = recuperacionService;
 	}
 
 	/**
@@ -109,50 +104,5 @@ public class AuthController {
 	public ResponseEntity<String> register(@RequestBody UsuarioDTO registerRequest) {
 		int status = usuarioService.registrar(registerRequest);
 		return RespuestaUsuario.guardar(status, "Usuario registrado exitosamente", HttpStatus.CREATED);
-	}
-
-	/**
-	 * Pide un código para restablecer la contraseña. Responde siempre lo mismo,
-	 * exista o no la cuenta, para no revelar qué correos están registrados.
-	 *
-	 * @param request objeto con el correo
-	 * @return {@link ResponseEntity} con código 202
-	 */
-	@Operation(summary = "Pedir código de recuperación", description = "Envía al correo un código de 6 dígitos "
-			+ "que vence en 30 minutos. Endpoint público.")
-	@ApiResponses(value = { @ApiResponse(responseCode = "202", description = "Solicitud recibida") })
-	@PostMapping(path = "/recuperar", consumes = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<String> recuperar(@RequestBody RecuperarDTO request) {
-		recuperacionService.solicitar(request.getCorreo());
-		return new ResponseEntity<>("Si el correo está registrado, te enviamos un código", HttpStatus.ACCEPTED);
-	}
-
-	/**
-	 * Cambia la contraseña con el código recibido por correo.
-	 *
-	 * @param request objeto con el correo, el código y la contraseña nueva
-	 * @return {@link ResponseEntity} con código 202 si se cambió, 400 si el código
-	 *         o la contraseña no sirven, o 500 si ocurre un error inesperado
-	 */
-	@Operation(summary = "Restablecer contraseña", description = "Cambia la contraseña con el código enviado al "
-			+ "correo. Endpoint público.")
-	@ApiResponses(value = { @ApiResponse(responseCode = "202", description = "Contraseña actualizada"),
-			@ApiResponse(responseCode = "400", description = "Código inválido o vencido, o contraseña débil") })
-	@PostMapping(path = "/restablecer", consumes = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<String> restablecer(@RequestBody RestablecerDTO request) {
-		switch (recuperacionService.restablecer(request)) {
-		case 0:
-			return new ResponseEntity<>("Contraseña actualizada", HttpStatus.ACCEPTED);
-		case 1:
-			return new ResponseEntity<>("La contraseña debe tener al menos 8 caracteres", HttpStatus.BAD_REQUEST);
-		case 2:
-			return new ResponseEntity<>("La contraseña debe tener mayúscula, minúscula y número",
-					HttpStatus.BAD_REQUEST);
-		case 3:
-			return new ResponseEntity<>("Código inválido o vencido", HttpStatus.BAD_REQUEST);
-		default:
-			return new ResponseEntity<>("Error interno al restablecer la contraseña",
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
 	}
 }

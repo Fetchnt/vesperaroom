@@ -7,18 +7,15 @@ import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Clase principal del aplicativo VesperaRoom, plataforma de reservas de
  * habitaciones de motel. {@link EnableScheduling} activa las tareas
- * programadas, como la actualización automática de estados de reserva, y
- * {@link EnableAsync} el envío de correos en segundo plano.
+ * programadas, como la actualización automática de estados de reserva.
  */
 @SpringBootApplication
 @EnableScheduling
-@EnableAsync
 public class VesperaroomApplication {
 
 	/**
