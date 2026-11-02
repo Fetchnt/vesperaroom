@@ -169,9 +169,7 @@ class LanzadorExcepcionesTest {
 		assertDoesNotThrow(() -> LanzadorExcepciones.verificarDuenoFoto(1L, null));
 		assertThrows(FotoDuenoException.class, () -> LanzadorExcepciones.verificarDuenoFoto(1L, 2L));
 		assertThrows(FotoDuenoException.class, () -> LanzadorExcepciones.verificarDuenoFoto(null, null));
-		assertDoesNotThrow(() -> LanzadorExcepciones.verificarSaldo(new BigDecimal("100"), new BigDecimal("50"),
-				new BigDecimal("150")));
-		assertThrows(MontoExcedidoException.class, () -> LanzadorExcepciones
-				.verificarSaldo(new BigDecimal("100"), new BigDecimal("50.01"), new BigDecimal("150")));
+		assertDoesNotThrow(() -> LanzadorExcepciones.verificarSaldo(false));
+		assertThrows(MontoExcedidoException.class, () -> LanzadorExcepciones.verificarSaldo(true));
 	}
 }
