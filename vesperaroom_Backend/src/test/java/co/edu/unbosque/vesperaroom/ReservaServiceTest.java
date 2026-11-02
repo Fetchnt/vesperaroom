@@ -250,6 +250,15 @@ class ReservaServiceTest {
 	}
 
 	/**
+	 * Metodo comprobar motel sin política de reserva.
+	 */
+	@Test
+	public void comprobarMotelSinPolitica() throws Exception {
+		when(politicaReservaRepository.findById(1L)).thenReturn(Optional.empty());
+		assertEquals(12, reservaService.crear(solicitud(), 1L));
+	}
+
+	/**
 	 * Metodo comprobar tarifa inexistente y de otro tipo de habitación.
 	 */
 	@Test

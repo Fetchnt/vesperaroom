@@ -38,6 +38,7 @@ import co.edu.unbosque.vesperaroom.exception.FechaException;
 import co.edu.unbosque.vesperaroom.exception.HabitacionNoDisponibleException;
 import co.edu.unbosque.vesperaroom.exception.HorarioOcupadoException;
 import co.edu.unbosque.vesperaroom.exception.LanzadorExcepciones;
+import co.edu.unbosque.vesperaroom.exception.PoliticaNoDefinidaException;
 import co.edu.unbosque.vesperaroom.exception.ReferenciaNoEncontradaException;
 import co.edu.unbosque.vesperaroom.exception.RegistroNoEncontradoException;
 import co.edu.unbosque.vesperaroom.exception.ServicioNoValidoException;
@@ -83,7 +84,8 @@ import co.edu.unbosque.vesperaroom.repository.TipoHabitacionRepository;
  * <li>9: la cantidad de personas supera la capacidad de la habitación</li>
  * <li>10: algún servicio adicional no es válido</li>
  * <li>11: la habitación ya está reservada en ese horario</li>
- * <li>12: error inesperado</li>
+ * <li>12: el motel no tiene política de reserva</li>
+ * <li>13: error inesperado</li>
  * </ul>
  * <p>
  * Códigos de {@link #cambiarEstado(Long, Estado)}: 0 éxito, 1 estado nulo, 2
@@ -176,10 +178,9 @@ public class ReservaService {
 					t.getVigenteHasta());
 
 			Optional<PoliticaReserva> politica = politicaReservaRepository.findById(motel.getIdMotel());
-			if (politica.isPresent()) {
-				LanzadorExcepciones.verificarAnticipacion(data.getFechaHoraInicio(),
-						politica.get().getAnticipacionMinimaHoras());
-			}
+			LanzadorExcepciones.verificarPoliticaDefinida(politica.isPresent());
+			LanzadorExcepciones.verificarAnticipacion(data.getFechaHoraInicio(),
+					politica.get().getAnticipacionMinimaHoras());
 
 			TipoHabitacion tipo = tipoHabitacionRepository.findById(h.getIdTipo()).get();
 			LanzadorExcepciones.verificarCapacidad(data.getCantidadPersonas(), tipo.getCapacidadPersonas());
@@ -225,9 +226,11 @@ public class ReservaService {
 			return 10;
 		} catch (HorarioOcupadoException e) {
 			return 11;
+		} catch (PoliticaNoDefinidaException e) {
+			return 12;
 		} catch (Exception e) {
 			e.printStackTrace();
-			return 12;
+			return 13;
 		}
 	}
 

@@ -398,6 +398,9 @@ export class MotelDetalle {
     stream: ({ params }) => this.politicaApi.deMotel(params),
   });
 
+  /** El backend no acepta reservas en un motel sin política, así que ni se ofrece buscar. */
+  protected readonly sinPolitica = computed(() => this.politica.hasValue() && this.politica.value() === null);
+
   protected readonly servicios = rxResource({
     params: () => this.id(),
     stream: ({ params }) => this.servicioApi.porMotel(params),
