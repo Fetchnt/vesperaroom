@@ -1,12 +1,8 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { forkJoin, map, of, switchMap, type Observable } from 'rxjs';
 import { PagoApi, ResenaApi, ReservaApi } from '../../core/api/entidades';
 import type { MetodoPago, Pago, Resena, Reserva } from '../../core/api/models';
-import { EstadoBadge } from '../../shared/estado-badge';
-import { Estrellas } from '../../shared/estrellas';
 import { legible } from '../../shared/etiquetas';
 import { lista } from '../../shared/recursos';
 
@@ -25,8 +21,8 @@ type ReservaDetallada = Reserva & {
 };
 
 @Component({
+  standalone: false,
   selector: 'app-mis-reservas',
-  imports: [CurrencyPipe, DatePipe, FormsModule, EstadoBadge, Estrellas],
   template: `
     <div class="encabezado-seccion">
       <h1>Mis reservas</h1>

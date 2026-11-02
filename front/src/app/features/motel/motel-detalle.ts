@@ -1,26 +1,10 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { forkJoin, map, of, switchMap } from 'rxjs';
-import {
-  CiudadApi,
-  FotoApi,
-  HabitacionApi,
-  ModalidadApi,
-  MotelApi,
-  PoliticaApi,
-  ResenaApi,
-  RespuestaApi,
-  ServicioApi,
-  TarifaApi,
-  TipoHabitacionApi,
-} from '../../core/api/entidades';
+import { CiudadApi, FotoApi, HabitacionApi, ModalidadApi, MotelApi, PoliticaApi, ResenaApi, RespuestaApi, ServicioApi, TarifaApi, TipoHabitacionApi } from '../../core/api/entidades';
 import { ResumenApi } from '../../core/api/resumen';
 import type { Caracteristica, Resena, RespuestaPropietario, Tarifa, TipoHabitacion } from '../../core/api/models';
 import { SessionStore } from '../../core/auth/session';
-import { Estrellas } from '../../shared/estrellas';
 import { legible } from '../../shared/etiquetas';
 import { lista, valorDe } from '../../shared/recursos';
 
@@ -37,8 +21,8 @@ function aIso(valor: string): string {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-motel-detalle',
-  imports: [CurrencyPipe, DatePipe, FormsModule, RouterLink, Estrellas],
   template: `
     @if (motel.isLoading()) {
       <div class="cargando">

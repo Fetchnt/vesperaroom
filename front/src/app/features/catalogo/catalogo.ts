@@ -1,8 +1,5 @@
-import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
 import { CiudadApi, DepartamentoApi, MotelApi } from '../../core/api/entidades';
 import { ResumenApi, type MotelResumen } from '../../core/api/resumen';
@@ -10,8 +7,8 @@ import type { Motel } from '../../core/api/models';
 import { lista } from '../../shared/recursos';
 
 @Component({
+  standalone: false,
   selector: 'app-catalogo',
-  imports: [CurrencyPipe, FormsModule, RouterLink],
   template: `
     <form class="buscador" role="search" (ngSubmit)="$event.preventDefault()">
       <label class="campo">

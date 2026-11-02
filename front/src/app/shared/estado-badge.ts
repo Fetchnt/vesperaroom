@@ -3,6 +3,7 @@ import { legible, tonoDeEstado } from './etiquetas';
 
 /** Etiqueta de color para cualquier enum de estado del backend. */
 @Component({
+  standalone: false,
   selector: 'app-estado',
   template: `<span class="insignia" [class]="tono()">{{ texto() }}</span>`,
   styles: `

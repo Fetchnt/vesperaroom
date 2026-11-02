@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { PagoApi } from '../../core/api/entidades';
 import type { EstadoPago } from '../../core/api/models';
-import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 
 const ACCIONES: { estado: EstadoPago; texto: string; peligro?: boolean }[] = [
   { estado: 'APROBADO', texto: 'Aprobar' },
@@ -10,8 +10,8 @@ const ACCIONES: { estado: EstadoPago; texto: string; peligro?: boolean }[] = [
 ];
 
 @Component({
+  standalone: false,
   selector: 'app-pagos-admin',
-  imports: [TablaCrud],
   template: `
     <h1>Pagos</h1>
     <p class="suave">Pagos de todas las reservas. Un pago aprobado o rechazado ya no cambia de estado.</p>

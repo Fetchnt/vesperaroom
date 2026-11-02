@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from './core/auth/auth';
 import { SessionStore } from './core/auth/session';
 
@@ -9,8 +9,8 @@ interface Enlace {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

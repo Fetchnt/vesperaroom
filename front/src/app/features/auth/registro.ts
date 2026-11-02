@@ -1,12 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth';
 import type { Rol, Usuario } from '../../core/api/models';
 
 @Component({
+  standalone: false,
   selector: 'app-registro',
-  imports: [FormsModule, RouterLink],
   template: `
     <div class="angosto pila">
       <h1>Crear cuenta</h1>

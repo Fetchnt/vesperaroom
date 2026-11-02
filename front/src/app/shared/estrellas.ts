@@ -2,6 +2,7 @@ import { Component, computed, input } from '@angular/core';
 
 /** Calificación de 1 a 5 en estrellas, con el valor numérico al lado. */
 @Component({
+  standalone: false,
   selector: 'app-estrellas',
   template: `
     <span class="estrellas" [attr.aria-label]="etiqueta()">

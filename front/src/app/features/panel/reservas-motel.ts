@@ -1,9 +1,8 @@
 import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { MotelApi, ReservaApi } from '../../core/api/entidades';
 import type { EstadoReserva } from '../../core/api/models';
-import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 import { lista } from '../../shared/recursos';
 
 /**
@@ -25,8 +24,8 @@ const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
 ];
 
 @Component({
+  standalone: false,
   selector: 'app-reservas-motel',
-  imports: [FormsModule, TablaCrud],
   template: `
     <h1>Reservas de mis moteles</h1>
 

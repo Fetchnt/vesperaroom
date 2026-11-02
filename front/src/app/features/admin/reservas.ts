@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { ReservaApi } from '../../core/api/entidades';
 import type { EstadoReserva } from '../../core/api/models';
-import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 
 /**
  * Mismas transiciones que valida ReservaService.cambiarEstado. Pasar a
@@ -22,8 +22,8 @@ const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
 ];
 
 @Component({
+  standalone: false,
   selector: 'app-reservas-admin',
-  imports: [TablaCrud],
   template: `
     <h1>Reservas</h1>
     <p class="suave">

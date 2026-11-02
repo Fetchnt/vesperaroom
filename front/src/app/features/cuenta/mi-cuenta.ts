@@ -1,16 +1,14 @@
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { UsuarioApi } from '../../core/api/entidades';
 import type { Usuario } from '../../core/api/models';
 import { SessionStore } from '../../core/auth/session';
 import { legible } from '../../shared/etiquetas';
-import { EstadoBadge } from '../../shared/estado-badge';
 import { valorDe } from '../../shared/recursos';
 
 @Component({
+  standalone: false,
   selector: 'app-mi-cuenta',
-  imports: [FormsModule, EstadoBadge],
   template: `
     <div class="angosto pila">
       <div class="encabezado-seccion">

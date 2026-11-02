@@ -1,11 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth';
 
 @Component({
+  standalone: false,
   selector: 'app-login',
-  imports: [FormsModule, RouterLink],
   template: `
     <div class="angosto pila">
       <h1>Ingresar</h1>

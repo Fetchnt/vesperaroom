@@ -1,7 +1,5 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, linkedSignal, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { PerfilPropietarioApi } from '../../core/api/entidades';
 import type { PerfilPropietario } from '../../core/api/models';
 import { valorDe } from '../../shared/recursos';
@@ -15,8 +13,8 @@ const PERFIL_VACIO: PerfilPropietario = {
 };
 
 @Component({
+  standalone: false,
   selector: 'app-mi-perfil',
-  imports: [DatePipe, FormsModule],
   template: `
     <div class="angosto pila">
       <h1>Mi perfil de propietario</h1>
