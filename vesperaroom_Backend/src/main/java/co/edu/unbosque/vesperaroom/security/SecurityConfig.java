@@ -46,7 +46,7 @@ public class SecurityConfig {
 	 * un segmento de la ruta y {@code **} a cualquier cantidad de segmentos.
 	 */
 	private static final String[] CATALOGO_PUBLICO = { "/departamento/**", "/ciudad/**", "/caracteristica/**",
-			"/modalidad/**", "/motel/getall", "/motel/getbyciudad/*", "/motel/getbyid/*", "/politica/getbyid/*",
+			"/modalidad/**", "/motel/getall", "/motel/resumen", "/motel/getbyciudad/*", "/motel/getbyid/*", "/politica/getbyid/*",
 			"/tipohabitacion/getbymotel/*", "/tipohabitacion/getbyid/*", "/tipohabitacion/caracteristicas/*",
 			"/habitacion/getbymotel/*", "/habitacion/getbytipo/*", "/habitacion/getbyid/*", "/habitacion/disponibles",
 			"/foto/getbymotel/*", "/foto/getbyhabitacion/*", "/foto/getbyid/*", "/tarifa/getbytipo/*",

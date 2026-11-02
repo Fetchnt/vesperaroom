@@ -1,9 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { map, type OperatorFunction } from 'rxjs';
 import { UsuarioApi } from '../../core/api/entidades';
 import type { Rol, Usuario } from '../../core/api/models';
-import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 
 type Filtro = 'TODOS' | Rol;
 
@@ -18,8 +17,8 @@ const FILTROS: { valor: Filtro; texto: string }[] = [
 ];
 
 @Component({
+  standalone: false,
   selector: 'app-usuarios',
-  imports: [FormsModule, TablaCrud],
   template: `
     <h1>Usuarios</h1>
 

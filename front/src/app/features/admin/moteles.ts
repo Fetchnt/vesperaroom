@@ -2,12 +2,12 @@ import { Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { CiudadApi, MotelApi, UsuarioApi } from '../../core/api/entidades';
 import type { Motel } from '../../core/api/models';
-import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 import { lista } from '../../shared/recursos';
 
 @Component({
+  standalone: false,
   selector: 'app-moteles-admin',
-  imports: [TablaCrud],
   template: `
     <h1>Moteles</h1>
     <p class="suave">Incluye los moteles inactivos, que no aparecen en el catálogo público.</p>

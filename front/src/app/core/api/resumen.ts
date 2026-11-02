@@ -1,31 +1,39 @@
 import { inject, Injectable } from '@angular/core';
-import { forkJoin, map, of, switchMap, type Observable } from 'rxjs';
-import { FotoApi, ResenaApi, ServicioApi, TarifaApi, TipoHabitacionApi } from './entidades';
-import type { Motel, ServicioAdicional } from './models';
+import { catchError, forkJoin, map, of, switchMap, type MonoTypeOperatorFunction, type Observable } from 'rxjs';
+import { FotoApi, ResenaApi, TarifaApi, TipoHabitacionApi } from './entidades';
+import type { Caracteristica, Motel, Tarifa, TipoHabitacion } from './models';
 
-/** Un motel tal como se muestra en una tarjeta del catálogo. */
+/** Un tipo de habitación con lo necesario para mostrarlo en una ficha. */
+export type TipoResumen = TipoHabitacion & {
+  tarifas: Tarifa[];
+  caracteristicas: Caracteristica[];
+};
+
+/** Un motel tal como se muestra en una ficha del catálogo. */
 export type MotelResumen = Motel & {
   foto: string | null;
   promedio: number;
+  comentarios: number;
   /** Tarifa más barata publicada, o null si el motel aún no tiene tarifas. */
   desde: number | null;
-  servicios: ServicioAdicional[];
+  tipos: TipoResumen[];
 };
 
+/** Si una parte falla, la ficha se muestra igual con ese dato vacío. */
+const oVacio = <T>(vacio: T): MonoTypeOperatorFunction<T> => catchError(() => of(vacio));
+
 /**
- * Arma la vista de catálogo. La API no expone «precio desde» ni «foto
- * principal» de un motel, así que se componen aquí a partir de los endpoints
- * que sí existen: fotos del motel, promedio de reseñas, servicios, y las
- * tarifas de cada uno de sus tipos de habitación.
+ * Arma la vista de catálogo. La API no expone un resumen por motel, así que se
+ * compone aquí con los endpoints que sí existen: fotos, promedio y reseñas, y
+ * por cada tipo de habitación sus tarifas y características.
  *
- * shortcut: son cuatro peticiones por motel; con un catálogo grande habría que
- * pedirle al backend un endpoint de resumen.
+ * shortcut: son 3 + 2·tipos peticiones por motel; con un catálogo grande habría
+ * que pedirle al backend un endpoint de resumen.
  */
 @Injectable({ providedIn: 'root' })
 export class ResumenApi {
   private readonly fotos = inject(FotoApi);
   private readonly resenas = inject(ResenaApi);
-  private readonly servicios = inject(ServicioApi);
   private readonly tipos = inject(TipoHabitacionApi);
   private readonly tarifas = inject(TarifaApi);
 
@@ -37,28 +45,46 @@ export class ResumenApi {
     return forkJoin(
       moteles.map((motel) =>
         forkJoin({
-          foto: this.fotos.porMotel(motel.idMotel!).pipe(map((lista) => lista[0]?.uri ?? null)),
-          promedio: this.resenas.promedio(motel.idMotel!),
-          servicios: this.servicios.porMotel(motel.idMotel!),
-          desde: this.precioDesde(motel.idMotel!),
-        }).pipe(map((extra) => ({ ...motel, ...extra }))),
+          foto: this.fotos.porMotel(motel.idMotel!).pipe(
+            map((lista) => lista[0]?.uri ?? null),
+            oVacio<string | null>(null),
+          ),
+          promedio: this.resenas.promedio(motel.idMotel!).pipe(oVacio(0)),
+          comentarios: this.resenas.porMotel(motel.idMotel!).pipe(
+            map((lista) => lista.length),
+            oVacio(0),
+          ),
+          tipos: this.tiposDe(motel.idMotel!),
+        }).pipe(map((extra) => ({ ...motel, ...extra, desde: masBarata(extra.tipos) }))),
       ),
     );
   }
 
   /** La tarifa más barata entre todos los tipos de habitación del motel. */
   precioDesde(idMotel: number): Observable<number | null> {
+    return this.tiposDe(idMotel).pipe(map(masBarata));
+  }
+
+  private tiposDe(idMotel: number): Observable<TipoResumen[]> {
     return this.tipos.porMotel(idMotel).pipe(
       switchMap((tipos) =>
         tipos.length === 0
-          ? of<number | null>(null)
-          : forkJoin(tipos.map((t) => this.tarifas.porTipo(t.idTipo!))).pipe(
-              map((listas) => {
-                const precios = listas.flat().map((t) => t.precio);
-                return precios.length === 0 ? null : Math.min(...precios);
-              }),
+          ? of<TipoResumen[]>([])
+          : forkJoin(
+              tipos.map((t) =>
+                forkJoin({
+                  tarifas: this.tarifas.porTipo(t.idTipo!).pipe(oVacio<Tarifa[]>([])),
+                  caracteristicas: this.tipos.caracteristicas(t.idTipo!).pipe(oVacio<Caracteristica[]>([])),
+                }).pipe(map((extra) => ({ ...t, ...extra }))),
+              ),
             ),
       ),
+      oVacio<TipoResumen[]>([]),
     );
   }
+}
+
+function masBarata(tipos: TipoResumen[]): number | null {
+  const precios = tipos.flatMap((t) => t.tarifas.map((tarifa) => tarifa.precio));
+  return precios.length === 0 ? null : Math.min(...precios);
 }

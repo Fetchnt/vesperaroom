@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.sql.DataSource;
@@ -36,6 +38,18 @@ public class MotelRepository {
 
 	private static final String SELECT_ACTIVOS = SELECT_BASE + "WHERE m.estado = 'ACTIVO' ORDER BY "
 			+ "m.nombre";
+
+	/** Mismo cálculo de promedio que ResenaRepository: reseña → reserva → habitación → motel. */
+	private static final String RESENAS_DEL_MOTEL = "FROM resena re JOIN reserva r ON r.id_reserva = "
+			+ "re.id_reserva JOIN habitacion h ON h.id_habitacion = r.id_habitacion WHERE h.id_motel = "
+			+ "m.id_motel";
+
+	private static final String AGREGADOS_ACTIVOS = "SELECT m.id_motel, "
+			+ "(SELECT f.uri FROM foto f WHERE f.id_motel = m.id_motel ORDER BY f.orden, f.id_foto "
+			+ "LIMIT 1) AS foto, "
+			+ "COALESCE((SELECT AVG(re.calificacion) " + RESENAS_DEL_MOTEL + "), 0) AS promedio, "
+			+ "(SELECT COUNT(*) " + RESENAS_DEL_MOTEL + ") AS comentarios "
+			+ "FROM motel m WHERE m.estado = 'ACTIVO'";
 
 	private static final String SELECT_ACTIVOS_POR_CIUDAD = SELECT_BASE + "WHERE m.estado = "
 			+ "'ACTIVO' AND m.id_ciudad = ? ORDER BY m.nombre";
@@ -99,6 +113,38 @@ public class MotelRepository {
 	 */
 	public List<Motel> findActivos() throws SQLException {
 		return listar(SELECT_ACTIVOS);
+	}
+
+	/**
+	 * Datos de cada motel activo que el catálogo muestra en su ficha y que viven
+	 * en otras tablas.
+	 *
+	 * @param foto        URI de la primera foto del motel, o {@code null} si no tiene
+	 * @param promedio    promedio de calificaciones, o 0 si no tiene reseñas
+	 * @param comentarios número de reseñas
+	 */
+	public record Agregados(String foto, double promedio, long comentarios) {
+	}
+
+	/**
+	 * Calcula en una sola consulta la foto principal, el promedio y el número de
+	 * reseñas de cada motel activo. Un motel sin fotos o sin reseñas también
+	 * aparece, con foto nula y promedio 0.
+	 *
+	 * @return mapa idMotel → agregados
+	 * @throws SQLException si ocurre un error de acceso a la base de datos
+	 */
+	public Map<Long, Agregados> findAgregadosActivos() throws SQLException {
+		try (Connection con = dataSource.getConnection();
+				PreparedStatement ps = con.prepareStatement(AGREGADOS_ACTIVOS);
+				ResultSet rs = ps.executeQuery()) {
+			Map<Long, Agregados> porMotel = new HashMap<>();
+			while (rs.next()) {
+				porMotel.put(rs.getLong("id_motel"),
+						new Agregados(rs.getString("foto"), rs.getDouble("promedio"), rs.getLong("comentarios")));
+			}
+			return porMotel;
+		}
 	}
 
 	/**

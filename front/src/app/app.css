@@ -66,3 +66,119 @@ nav a.activo {
   box-shadow: inset 0 -2px 0 var(--marca);
   border-radius: 0;
 }
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+.duenos {
+  padding: 9px 16px;
+  border-radius: var(--r-s);
+  background: #ffc61a;
+  color: #2b2100;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.duenos:hover {
+  text-decoration: none;
+  background: #ffb800;
+}
+
+/* ---------- Menú de usuario (details nativo: abre con teclado y sin JavaScript) ---------- */
+
+.menu {
+  position: relative;
+}
+
+.menu summary {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 500;
+}
+
+.menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu summary::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--marca);
+  border-bottom: 2px solid var(--marca);
+  transform: rotate(45deg) translateY(-3px);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-s);
+  background: var(--marca-solida);
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.menu ul {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  min-width: 200px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-m);
+  box-shadow: var(--sombra);
+}
+
+.menu li a,
+.menu li button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--r-s);
+  color: var(--texto);
+  text-align: left;
+  font-weight: 400;
+}
+
+.menu li a:hover,
+.menu li button:hover {
+  text-decoration: none;
+  background: var(--superficie-2);
+}
+
+.menu li a.activo {
+  color: var(--marca);
+}
+
+/* En móvil la barra cabe en dos filas: «Crear cuenta» sigue a un clic desde el login. */
+@media (max-width: 640px) {
+  .barra-interna {
+    padding: 10px 16px;
+  }
+
+  .marca {
+    font-size: 1.2rem;
+  }
+
+  .duenos {
+    padding: 7px 10px;
+    font-size: 0.8rem;
+  }
+
+  .acceso + .acceso {
+    display: none;
+  }
+}

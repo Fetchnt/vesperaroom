@@ -21,10 +21,11 @@ import co.edu.unbosque.vesperaroom.repository.AutorizacionRepository;
  * Reglas comunes a todos los métodos:
  * </p>
  * <ul>
+ * <li>Si el identificador es nulo se niega, también al ADMINISTRADOR: la
+ * seguridad no debe depender de que otra capa rechace el nulo después.</li>
  * <li>El ADMINISTRADOR siempre tiene permiso.</li>
- * <li>Si el identificador es nulo o el recurso no existe, se permite el paso
- * para que el servicio correspondiente responda "no encontrado" (404) en lugar
- * de un 403 engañoso.</li>
+ * <li>Si el recurso no existe se permite el paso, para que el servicio
+ * correspondiente responda "no encontrado" (404) en lugar de un 403 engañoso.</li>
  * <li>En cualquier otro caso, el usuario debe ser el dueño del recurso.</li>
  * </ul>
  */
@@ -56,7 +57,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeGestionarMotel(Usuario usuario, Long idMotel) {
-		if (idMotel == null || esAdministrador(usuario)) {
+		if (idMotel == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {
@@ -75,7 +79,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeGestionarTipo(Usuario usuario, Long idTipo) {
-		if (idTipo == null || esAdministrador(usuario)) {
+		if (idTipo == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {
@@ -94,7 +101,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeGestionarHabitacion(Usuario usuario, Long idHabitacion) {
-		if (idHabitacion == null || esAdministrador(usuario)) {
+		if (idHabitacion == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {
@@ -113,7 +123,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeGestionarTarifa(Usuario usuario, Long idTarifa) {
-		if (idTarifa == null || esAdministrador(usuario)) {
+		if (idTarifa == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {
@@ -132,7 +145,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeGestionarServicio(Usuario usuario, Long idServicio) {
-		if (idServicio == null || esAdministrador(usuario)) {
+		if (idServicio == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {
@@ -151,7 +167,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeGestionarFoto(Usuario usuario, Long idFoto) {
-		if (idFoto == null || esAdministrador(usuario)) {
+		if (idFoto == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {
@@ -171,7 +190,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeGestionarReserva(Usuario usuario, Long idReserva) {
-		if (idReserva == null || esAdministrador(usuario)) {
+		if (idReserva == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {
@@ -205,7 +227,7 @@ public class AutorizacionService {
 	 */
 	public boolean esClienteDeReserva(Usuario usuario, Long idReserva) {
 		if (idReserva == null) {
-			return true;
+			return false;
 		}
 		try {
 			return esDueno(usuario, autorizacionRepository.clienteDeReserva(idReserva));
@@ -223,7 +245,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeGestionarPago(Usuario usuario, Long idPago) {
-		if (idPago == null || esAdministrador(usuario)) {
+		if (idPago == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {
@@ -243,7 +268,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeVerPago(Usuario usuario, Long idPago) {
-		if (idPago == null || puedeGestionarPago(usuario, idPago)) {
+		if (idPago == null) {
+			return false;
+		}
+		if (puedeGestionarPago(usuario, idPago)) {
 			return true;
 		}
 		try {
@@ -263,7 +291,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeResponderResena(Usuario usuario, Long idResena) {
-		if (idResena == null || esAdministrador(usuario)) {
+		if (idResena == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {
@@ -283,7 +314,10 @@ public class AutorizacionService {
 	 * @throws AccesoDatosException si falla la consulta a la base de datos
 	 */
 	public boolean puedeEditarResena(Usuario usuario, Long idResena) {
-		if (idResena == null || esAdministrador(usuario)) {
+		if (idResena == null) {
+			return false;
+		}
+		if (esAdministrador(usuario)) {
 			return true;
 		}
 		try {

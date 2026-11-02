@@ -1,9 +1,6 @@
 import { Component, computed, effect, input, signal, untracked } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import type { Observable } from 'rxjs';
 import type { Id } from '../core/api/api';
-import { EstadoBadge } from './estado-badge';
 import { legible } from './etiquetas';
 
 export type TipoCampo =
@@ -50,8 +47,8 @@ export interface AccionFila {
  * fotos...), que solo se diferencian en la lista de campos.
  */
 @Component({
+  standalone: false,
   selector: 'app-tabla-crud',
-  imports: [FormsModule, RouterLink, EstadoBadge],
   template: `
     <section class="pila">
       <div class="encabezado-seccion">

@@ -1,19 +1,7 @@
 import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { forkJoin, map, of, switchMap } from 'rxjs';
-import {
-  CaracteristicaApi,
-  FotoApi,
-  HabitacionApi,
-  ModalidadApi,
-  MotelApi,
-  PoliticaApi,
-  ServicioApi,
-  TarifaApi,
-  TipoHabitacionApi,
-} from '../../core/api/entidades';
+import { CaracteristicaApi, FotoApi, HabitacionApi, ModalidadApi, MotelApi, PoliticaApi, ServicioApi, TarifaApi, TipoHabitacionApi } from '../../core/api/entidades';
 import type {
   EstadoHabitacion,
   Foto,
@@ -25,7 +13,7 @@ import type {
   TipoHabitacion,
 } from '../../core/api/models';
 import { SessionStore } from '../../core/auth/session';
-import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 import { lista, valorDe } from '../../shared/recursos';
 
 type Seccion =
@@ -45,8 +33,8 @@ const TIPOS_DIA: TipoDia[] = ['TODOS', 'ENTRE_SEMANA', 'FIN_DE_SEMANA', 'FESTIVO
 const ESTADOS_HABITACION: EstadoHabitacion[] = ['ACTIVA', 'MANTENIMIENTO', 'FUERA_DE_SERVICIO'];
 
 @Component({
+  standalone: false,
   selector: 'app-motel-gestion',
-  imports: [FormsModule, RouterLink, TablaCrud],
   template: `
     <div class="encabezado-seccion">
       <div>

@@ -89,4 +89,21 @@ class AutorizacionServiceTest {
 		assertTrue(autorizacionService.puedeVerReserva(usuario(5L, Rol.PROPIETARIO), 3L));
 		assertFalse(autorizacionService.puedeVerReserva(usuario(2L, Rol.CLIENTE), 3L));
 	}
+
+	/**
+	 * Un id nulo se niega a todos, también al administrador, sin consultar la base:
+	 * antes se dejaba pasar y la seguridad dependía de que el servicio lo rechazara.
+	 */
+	@Test
+	public void comprobarIdNuloSeNiega() {
+		Usuario dueno = usuario(4L, Rol.PROPIETARIO);
+		Usuario admin = usuario(6L, Rol.ADMINISTRADOR);
+
+		assertFalse(autorizacionService.puedeGestionarMotel(dueno, null));
+		assertFalse(autorizacionService.puedeGestionarTipo(dueno, null));
+		assertFalse(autorizacionService.puedeGestionarHabitacion(dueno, null));
+		assertFalse(autorizacionService.puedeVerReserva(usuario(1L, Rol.CLIENTE), null));
+		assertFalse(autorizacionService.puedeGestionarMotel(admin, null));
+		verifyNoInteractions(autorizacionRepository);
+	}
 }

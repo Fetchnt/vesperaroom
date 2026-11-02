@@ -1,17 +1,27 @@
 package co.edu.unbosque.vesperaroom.service;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import co.edu.unbosque.vesperaroom.dto.CaracteristicaDTO;
 import co.edu.unbosque.vesperaroom.dto.MotelDTO;
+import co.edu.unbosque.vesperaroom.dto.MotelResumenDTO;
+import co.edu.unbosque.vesperaroom.dto.TarifaDTO;
+import co.edu.unbosque.vesperaroom.dto.TipoResumenDTO;
+import co.edu.unbosque.vesperaroom.entity.Caracteristica;
 import co.edu.unbosque.vesperaroom.entity.Motel;
 import co.edu.unbosque.vesperaroom.entity.Motel.Estado;
+import co.edu.unbosque.vesperaroom.entity.Tarifa;
+import co.edu.unbosque.vesperaroom.entity.TipoHabitacion;
 import co.edu.unbosque.vesperaroom.exception.AccesoDatosException;
 import co.edu.unbosque.vesperaroom.exception.CampoObligatorioException;
 import co.edu.unbosque.vesperaroom.exception.CoordenadaException;
@@ -22,6 +32,8 @@ import co.edu.unbosque.vesperaroom.exception.TextoInvalidoException;
 import co.edu.unbosque.vesperaroom.repository.CiudadRepository;
 import co.edu.unbosque.vesperaroom.repository.MotelRepository;
 import co.edu.unbosque.vesperaroom.repository.PerfilPropietarioRepository;
+import co.edu.unbosque.vesperaroom.repository.TarifaRepository;
+import co.edu.unbosque.vesperaroom.repository.TipoHabitacionRepository;
 import co.edu.unbosque.vesperaroom.util.CodigoMySQL;
 import co.edu.unbosque.vesperaroom.util.Normalizador;
 
@@ -58,13 +70,18 @@ public class MotelService implements CRUDOperation<MotelDTO> {
 	private final MotelRepository motelRepository;
 	private final PerfilPropietarioRepository perfilPropietarioRepository;
 	private final CiudadRepository ciudadRepository;
+	private final TipoHabitacionRepository tipoHabitacionRepository;
+	private final TarifaRepository tarifaRepository;
 	private final ModelMapper mapper;
 
 	public MotelService(MotelRepository motelRepository, PerfilPropietarioRepository perfilPropietarioRepository,
-			CiudadRepository ciudadRepository, ModelMapper mapper) {
+			CiudadRepository ciudadRepository, TipoHabitacionRepository tipoHabitacionRepository,
+			TarifaRepository tarifaRepository, ModelMapper mapper) {
 		this.motelRepository = motelRepository;
 		this.perfilPropietarioRepository = perfilPropietarioRepository;
 		this.ciudadRepository = ciudadRepository;
+		this.tipoHabitacionRepository = tipoHabitacionRepository;
+		this.tarifaRepository = tarifaRepository;
 		this.mapper = mapper;
 	}
 
@@ -222,6 +239,52 @@ public class MotelService implements CRUDOperation<MotelDTO> {
 	public List<MotelDTO> getActivos() {
 		try {
 			return toDtoList(motelRepository.findActivos());
+		} catch (SQLException e) {
+			throw new AccesoDatosException(e);
+		}
+	}
+
+	/**
+	 * Arma las fichas del catálogo: cada motel activo con su foto principal,
+	 * calificación, tarifa más barata y tipos de habitación con tarifas y
+	 * características. Son cinco consultas en total, sin importar cuántos moteles
+	 * haya; antes el front hacía varias peticiones por motel.
+	 *
+	 * @return lista de {@link MotelResumenDTO}, en el orden de {@link #getActivos()}
+	 * @throws AccesoDatosException si falla la consulta a la base de datos
+	 */
+	public List<MotelResumenDTO> getResumen() {
+		try {
+			Map<Long, MotelRepository.Agregados> agregados = motelRepository.findAgregadosActivos();
+			Map<Long, List<Caracteristica>> caracteristicas = tipoHabitacionRepository.findCaracteristicasPorTipo();
+			Map<Long, List<TarifaDTO>> tarifas = new HashMap<>();
+			for (Tarifa t : tarifaRepository.findAll()) {
+				tarifas.computeIfAbsent(t.getIdTipo(), k -> new ArrayList<>()).add(mapper.map(t, TarifaDTO.class));
+			}
+			Map<Long, List<TipoResumenDTO>> tipos = new HashMap<>();
+			for (TipoHabitacion t : tipoHabitacionRepository.findAll()) {
+				TipoResumenDTO tipo = mapper.map(t, TipoResumenDTO.class);
+				tipo.setTarifas(tarifas.getOrDefault(t.getIdTipo(), List.of()));
+				tipo.setCaracteristicas(caracteristicas.getOrDefault(t.getIdTipo(), List.of()).stream()
+						.map(c -> mapper.map(c, CaracteristicaDTO.class)).toList());
+				tipos.computeIfAbsent(t.getIdMotel(), k -> new ArrayList<>()).add(tipo);
+			}
+
+			List<MotelResumenDTO> resumen = new ArrayList<>();
+			for (Motel m : motelRepository.findActivos()) {
+				MotelResumenDTO dto = mapper.map(m, MotelResumenDTO.class);
+				// Un motel que se activó entre las dos consultas sale sin foto ni reseñas.
+				MotelRepository.Agregados a = agregados.getOrDefault(m.getIdMotel(),
+						new MotelRepository.Agregados(null, 0, 0));
+				dto.setFoto(a.foto());
+				dto.setPromedio(a.promedio());
+				dto.setComentarios(a.comentarios());
+				dto.setTipos(tipos.getOrDefault(m.getIdMotel(), List.of()));
+				dto.setDesde(dto.getTipos().stream().flatMap(t -> t.getTarifas().stream())
+						.map(TarifaDTO::getPrecio).min(BigDecimal::compareTo).orElse(null));
+				resumen.add(dto);
+			}
+			return resumen;
 		} catch (SQLException e) {
 			throw new AccesoDatosException(e);
 		}

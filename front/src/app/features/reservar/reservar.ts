@@ -1,17 +1,8 @@
-import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
-import {
-  HabitacionApi,
-  ModalidadApi,
-  PoliticaApi,
-  ServicioApi,
-  TarifaApi,
-  TipoHabitacionApi,
-} from '../../core/api/entidades';
+import { HabitacionApi, ModalidadApi, PoliticaApi, ServicioApi, TarifaApi, TipoHabitacionApi } from '../../core/api/entidades';
 import type { Reserva, ServicioAdicional } from '../../core/api/models';
 import { ReservaApi } from '../../core/api/entidades';
 import { totalEstimado, type ServicioElegido } from '../../core/reservas/total';
@@ -19,8 +10,8 @@ import { legible } from '../../shared/etiquetas';
 import { lista, valorDe } from '../../shared/recursos';
 
 @Component({
+  standalone: false,
   selector: 'app-reservar',
-  imports: [CurrencyPipe, FormsModule],
   template: `
     <div class="angosto pila">
       <h1>Confirmar reserva</h1>

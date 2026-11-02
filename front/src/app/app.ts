@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from './core/auth/auth';
 import { SessionStore } from './core/auth/session';
 
@@ -9,8 +9,8 @@ interface Enlace {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -19,17 +19,22 @@ export class App {
   private readonly router = inject(Router);
   protected readonly sesion = inject(SessionStore);
 
+  /** El llamado a dueños sobra para quien ya es propietario o administra. */
+  protected readonly invitarDuenos = computed(() => {
+    const rol = this.sesion.rol();
+    return rol !== 'PROPIETARIO' && rol !== 'ADMINISTRADOR';
+  });
+
+  /** Lo que va en el menú de usuario, según el rol. */
   protected readonly enlaces = computed<Enlace[]>(() => {
     switch (this.sesion.rol()) {
       case 'CLIENTE':
         return [
-          { ruta: '/', texto: 'Moteles' },
           { ruta: '/mis-reservas', texto: 'Mis reservas' },
           { ruta: '/mi-cuenta', texto: 'Mi cuenta' },
         ];
       case 'PROPIETARIO':
         return [
-          { ruta: '/', texto: 'Moteles' },
           { ruta: '/panel/moteles', texto: 'Mis moteles' },
           { ruta: '/panel/reservas', texto: 'Reservas' },
           { ruta: '/panel/resenas', texto: 'Reseñas' },
@@ -48,7 +53,7 @@ export class App {
           { ruta: '/mi-cuenta', texto: 'Mi cuenta' },
         ];
       default:
-        return [{ ruta: '/', texto: 'Moteles' }];
+        return [];
     }
   });
 

@@ -302,3 +302,139 @@
 .tarifas strong {
   color: var(--marca);
 }
+
+/* ---------- Miga de pan ---------- */
+
+.miga {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+  padding: 7px 28px;
+  margin-bottom: 20px;
+  border-radius: 999px;
+  background: var(--superficie-2);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.miga span {
+  color: var(--texto-suave);
+  font-weight: 400;
+}
+
+/* ---------- Dos columnas: contenido y tarjeta de reserva ---------- */
+
+.detalle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 32px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+.columna {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+
+.columna h2 {
+  margin: 0;
+}
+
+.reserva-col {
+  position: sticky;
+  top: 84px;
+}
+
+.reservar .campo {
+  gap: 4px;
+}
+
+.reservar .desde {
+  margin: 0;
+}
+
+.reservar .desde small {
+  text-align: left;
+}
+
+.ubicacion {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* ---------- Servicios en baldosas ---------- */
+
+.baldosas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.baldosas li {
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  padding: 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  background: var(--superficie);
+  border-radius: var(--r-m);
+  box-shadow: var(--sombra);
+}
+
+/* ---------- Mapa, nota y cambios ---------- */
+
+.mapa {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border: 0;
+  border-radius: var(--r-m);
+  background: var(--superficie-2);
+}
+
+.nota-reserva {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+}
+
+.cambios {
+  border: 1px solid var(--borde);
+  border-radius: var(--r-m);
+  padding: 10px 14px;
+  font-size: 0.85rem;
+}
+
+.cambios summary {
+  cursor: pointer;
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+.cambios ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+/* ---------- Móvil ---------- */
+
+@media (max-width: 900px) {
+  .detalle {
+    grid-template-columns: 1fr;
+  }
+
+  /* En móvil la reserva va primero, que es a lo que viene la gente. */
+  .reserva-col {
+    position: static;
+    order: -1;
+  }
+}

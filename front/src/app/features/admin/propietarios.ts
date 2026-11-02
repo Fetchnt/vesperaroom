@@ -2,14 +2,14 @@ import { Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { PerfilPropietarioApi, UsuarioApi } from '../../core/api/entidades';
 import type { PerfilPropietario, TipoCuenta } from '../../core/api/models';
-import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 import { lista } from '../../shared/recursos';
 
 const TIPOS_CUENTA: TipoCuenta[] = ['AHORROS', 'CORRIENTE'];
 
 @Component({
+  standalone: false,
   selector: 'app-propietarios',
-  imports: [TablaCrud],
   template: `
     <h1>Perfiles de propietario</h1>
     <p class="suave">
