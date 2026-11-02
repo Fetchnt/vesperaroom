@@ -1,5 +1,7 @@
 HELP.md
 target/
+# Salida de compilación de Eclipse
+bin/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
