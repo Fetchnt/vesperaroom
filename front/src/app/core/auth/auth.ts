@@ -14,9 +14,9 @@ export class AuthService {
   private readonly sesion = inject(SessionStore);
 
   /** POST /auth/login. Responde 200 con el token, o 401/403 con texto plano. */
-  login(credenciales: Credenciales): Observable<Sesion> {
+  login(credenciales: Credenciales, recordar = true): Observable<Sesion> {
     return this.http.post<Sesion>(environment.apiUrl + '/auth/login', credenciales).pipe(
-      tap((sesion) => this.sesion.guardar(sesion)),
+      tap((sesion) => this.sesion.guardar(sesion, recordar)),
       catchError((e) => throwError(() => new Error(mensajeDeError(e)))),
     );
   }

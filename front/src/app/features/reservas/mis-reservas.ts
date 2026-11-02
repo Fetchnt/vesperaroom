@@ -83,7 +83,9 @@ type ReservaDetallada = Reserva & {
                   <span class="suave"> · ref. {{ pago.referenciaTransaccion }}</span>
                 }
               </p>
-            } @else if (vigente(r)) {
+            }
+            <!-- Un pago rechazado se muestra, pero no impide volver a pagar. -->
+            @if (vigente(r) && (!r.pago || r.pago.estado === 'RECHAZADO')) {
               @if (pagando() === r.idReserva) {
                 <form class="formulario" (ngSubmit)="registrarPago(r)">
                   <label class="campo">

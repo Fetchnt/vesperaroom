@@ -21,3 +21,11 @@ export function lista<T>(recurso: Leible<T[]>): T[] {
 export function valorDe<T>(recurso: Leible<T>, vacio: T): T {
   return recurso.hasValue() ? recurso.value() : vacio;
 }
+
+/**
+ * Para inputs que llegan de la URL: si el parámetro no viene, el router entrega
+ * `undefined` aunque el input tenga valor por defecto. Uso: `input('', { transform: desdeUrl })`.
+ */
+export function desdeUrl(valor: string | undefined): string {
+  return valor ?? '';
+}

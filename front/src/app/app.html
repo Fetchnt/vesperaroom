@@ -5,22 +5,32 @@
       VesperaRoom
     </a>
 
-    <nav>
-      @for (enlace of enlaces(); track enlace.ruta) {
-        <a
-          [routerLink]="enlace.ruta"
-          routerLinkActive="activo"
-          [routerLinkActiveOptions]="{ exact: enlace.ruta === '/' }"
-        >
-          {{ enlace.texto }}
-        </a>
-      }
+    <nav aria-label="Principal">
+      <a routerLink="/moteles" routerLinkActive="activo">Moteles</a>
     </nav>
 
-    <div class="fila">
+    <div class="acciones">
+      @if (invitarDuenos()) {
+        <a class="duenos" routerLink="/registro" [queryParams]="{ rol: 'PROPIETARIO' }">¿Eres dueño de un motel?</a>
+      }
+
       @if (sesion.actual(); as usuario) {
-        <span class="pequeno suave">{{ usuario.nombre }}</span>
-        <button type="button" class="plano" (click)="salir()">Salir</button>
+        <details class="menu" #menu>
+          <summary>
+            <span class="avatar" aria-hidden="true">{{ usuario.nombre.charAt(0) }}</span>
+            {{ usuario.nombre }}
+          </summary>
+          <ul>
+            @for (enlace of enlaces(); track enlace.ruta) {
+              <li>
+                <a [routerLink]="enlace.ruta" routerLinkActive="activo" (click)="menu.open = false">{{ enlace.texto }}</a>
+              </li>
+            }
+            <li>
+              <button type="button" class="plano" (click)="menu.open = false; salir()">Cerrar sesión</button>
+            </li>
+          </ul>
+        </details>
       } @else {
         <a routerLink="/login" class="acceso">Iniciar sesión</a>
         <a routerLink="/registro" class="acceso">Crear cuenta</a>

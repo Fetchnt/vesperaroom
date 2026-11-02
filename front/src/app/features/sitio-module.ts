@@ -6,13 +6,15 @@ import { Login } from './auth/login';
 import { Registro } from './auth/registro';
 import { Catalogo } from './catalogo/catalogo';
 import { MiCuenta } from './cuenta/mi-cuenta';
+import { Inicio } from './inicio/inicio';
 import { MotelDetalle } from './motel/motel-detalle';
 import { Reservar } from './reservar/reservar';
 import { MisReservas } from './reservas/mis-reservas';
 
 /** Lo que recorre un visitante y, con sesión, el cliente. */
 const routes: Routes = [
-  { path: '', title: 'Moteles · VesperaRoom', component: Catalogo },
+  { path: '', pathMatch: 'full', title: 'VesperaRoom · Reserva tu habitación', component: Inicio },
+  { path: 'moteles', title: 'Moteles · VesperaRoom', component: Catalogo },
   { path: 'motel/:id', title: 'Motel · VesperaRoom', component: MotelDetalle },
   { path: 'login', title: 'Ingresar · VesperaRoom', canActivate: [guestGuard], component: Login },
   { path: 'registro', title: 'Crear cuenta · VesperaRoom', canActivate: [guestGuard], component: Registro },
@@ -32,7 +34,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  declarations: [Catalogo, MotelDetalle, Login, Registro, MiCuenta, Reservar, MisReservas],
+  declarations: [Inicio, Catalogo, MotelDetalle, Login, Registro, MiCuenta, Reservar, MisReservas],
   imports: [SharedModule, RouterModule.forChild(routes)],
 })
 export class SitioModule {}
