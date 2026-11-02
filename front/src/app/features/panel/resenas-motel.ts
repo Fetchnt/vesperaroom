@@ -1,18 +1,15 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, linkedSignal, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { forkJoin, map, of, switchMap, type Observable } from 'rxjs';
 import { MotelApi, ResenaApi, RespuestaApi } from '../../core/api/entidades';
 import type { Resena, RespuestaPropietario } from '../../core/api/models';
-import { Estrellas } from '../../shared/estrellas';
 import { lista } from '../../shared/recursos';
 
 type ResenaConRespuesta = Resena & { respuesta: RespuestaPropietario | null };
 
 @Component({
+  standalone: false,
   selector: 'app-resenas-motel',
-  imports: [DatePipe, FormsModule, Estrellas],
   template: `
     <h1>Reseñas de mis moteles</h1>
 

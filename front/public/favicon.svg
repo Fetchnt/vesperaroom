@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Luna creciente: un círculo al que otro, desplazado, le «come» un lado. -->
+    <mask id="creciente">
+      <rect width="64" height="64" fill="#fff"/>
+      <circle cx="41" cy="25" r="16" fill="#000"/>
+    </mask>
+    <linearGradient id="luna" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff4f8b"/>
+      <stop offset="1" stop-color="#d4113f"/>
+    </linearGradient>
+    <radialGradient id="fondo" cx="0.5" cy="0.4" r="0.75">
+      <stop offset="0" stop-color="#4a0f27"/>
+      <stop offset="1" stop-color="#1a0710"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#fondo)"/>
+  <circle cx="31" cy="33" r="19" fill="url(#luna)" mask="url(#creciente)"/>
+</svg>

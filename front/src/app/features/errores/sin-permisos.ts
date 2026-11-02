@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 @Component({
+  standalone: false,
   selector: 'app-sin-permisos',
-  imports: [RouterLink],
   template: `
     <div class="tarjeta pila">
       <h1>Sin permisos</h1>

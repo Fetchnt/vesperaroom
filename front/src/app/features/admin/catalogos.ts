@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { CaracteristicaApi, CiudadApi, DepartamentoApi, ModalidadApi } from '../../core/api/entidades';
 import type { Caracteristica, Ciudad, Departamento, Modalidad } from '../../core/api/models';
-import { TablaCrud, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type Campo, type Registro } from '../../shared/tabla-crud';
 import { lista } from '../../shared/recursos';
 
 type Catalogo = 'departamentos' | 'ciudades' | 'caracteristicas' | 'modalidades';
@@ -15,8 +15,8 @@ const PESTANAS: { clave: Catalogo; texto: string }[] = [
 ];
 
 @Component({
+  standalone: false,
   selector: 'app-catalogos',
-  imports: [TablaCrud],
   template: `
     <h1>Catálogos</h1>
     <p class="suave">

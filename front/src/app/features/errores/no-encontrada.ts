@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 @Component({
+  standalone: false,
   selector: 'app-no-encontrada',
-  imports: [RouterLink],
   template: `
     <div class="tarjeta pila">
       <h1>Página no encontrada</h1>

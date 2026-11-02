@@ -2,12 +2,12 @@ import { Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { CiudadApi, MotelApi } from '../../core/api/entidades';
 import type { Motel } from '../../core/api/models';
-import { TablaCrud, type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 import { lista } from '../../shared/recursos';
 
 @Component({
+  standalone: false,
   selector: 'app-mis-moteles',
-  imports: [TablaCrud],
   template: `
     <h1>Mis moteles</h1>
     <p class="suave">

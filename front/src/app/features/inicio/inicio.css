@@ -1,0 +1,137 @@
+/* La portada ocupa todo el ancho aunque viva dentro del contenedor centrado. */
+.portada {
+  margin: -24px calc(50% - 50vw) 0;
+  padding: 72px max(16px, calc(50vw - 550px)) 56px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 80% 20%, rgb(212 17 63 / 0.55), transparent 55%),
+    radial-gradient(circle at 10% 90%, rgb(120 20 60 / 0.6), transparent 50%),
+    linear-gradient(135deg, #1a0d14, #2b0f1d 60%, #120a10);
+}
+
+.portada-texto {
+  max-width: 720px;
+  margin-bottom: 32px;
+}
+
+.portada h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  line-height: 1.05;
+  margin-bottom: 14px;
+}
+
+.portada p {
+  margin: 0;
+  font-size: 1.1rem;
+  opacity: 0.85;
+}
+
+.buscador {
+  display: block;
+  max-width: 920px;
+  color: var(--texto);
+}
+
+.bloque {
+  margin-top: 48px;
+}
+
+.encabezado-seccion a {
+  font-weight: 600;
+}
+
+.motel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 14px;
+  overflow: hidden;
+}
+
+.foto {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background:
+    radial-gradient(circle at 70% 30%, rgb(212 17 63 / 0.35), transparent 60%),
+    var(--superficie-2);
+}
+
+.foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sello {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 10px;
+  border-radius: var(--r-s);
+  background: #128a3e;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.datos {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.motel > .suave {
+  padding: 0 14px;
+}
+
+.nota {
+  color: var(--marca);
+}
+
+.esqueleto {
+  height: 260px;
+  background: linear-gradient(90deg, var(--superficie-2), var(--superficie), var(--superficie-2));
+  background-size: 200% 100%;
+  animation: brillo 1.2s linear infinite;
+}
+
+@keyframes brillo {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}
+
+.duenos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 48px;
+  padding: 28px 32px;
+  border-radius: var(--r-l);
+  background: var(--marca-tenue);
+}
+
+.duenos h2 {
+  margin-bottom: 4px;
+}
+
+.duenos p {
+  margin: 0;
+  color: var(--texto-suave);
+}
+
+.duenos .boton-enlace {
+  padding: 12px 24px;
+}

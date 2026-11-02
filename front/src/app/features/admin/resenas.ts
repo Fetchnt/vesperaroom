@@ -1,13 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { ResenaApi } from '../../core/api/entidades';
 import type { Resena } from '../../core/api/models';
-import { TablaCrud, type Campo, type Registro } from '../../shared/tabla-crud';
+import { type Campo, type Registro } from '../../shared/tabla-crud';
 
 const CALIFICACIONES = [1, 2, 3, 4, 5].map((n) => ({ valor: n, texto: '★'.repeat(n) }));
 
 @Component({
+  standalone: false,
   selector: 'app-resenas-admin',
-  imports: [TablaCrud],
   template: `
     <h1>Reseñas</h1>
     <p class="suave">
