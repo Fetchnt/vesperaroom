@@ -61,6 +61,9 @@ public class RespuestaReserva {
 		case 11:
 			return new ResponseEntity<>("La habitación ya está reservada en ese horario",
 					HttpStatus.CONFLICT);
+		case 12:
+			return new ResponseEntity<>("El motel todavía no tiene política de reserva; no se pueden recibir reservas",
+					HttpStatus.CONFLICT);
 		default:
 			return new ResponseEntity<>("Error al procesar la reserva", HttpStatus.INTERNAL_SERVER_ERROR);
 		}

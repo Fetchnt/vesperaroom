@@ -450,6 +450,19 @@ public class LanzadorExcepciones {
 	}
 
 	/**
+	 * Verifica que el motel tenga política de reserva: sin ella no hay reglas de
+	 * anticipación, recargo ni reembolso con las que aceptar la reserva.
+	 *
+	 * @param existe indica si el motel tiene política registrada
+	 * @throws PoliticaNoDefinidaException si el motel no tiene política
+	 */
+	public static void verificarPoliticaDefinida(boolean existe) throws PoliticaNoDefinidaException {
+		if (!existe) {
+			throw new PoliticaNoDefinidaException();
+		}
+	}
+
+	/**
 	 * Verifica que entre el momento actual y el inicio de la reserva haya al menos
 	 * las horas de anticipación que exige el motel.
 	 *

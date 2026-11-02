@@ -113,56 +113,62 @@ function aIso(valor: string): string {
         <!-- Disponibilidad -->
         <section class="reservar" id="disponibilidad">
           <h2>¿Cuándo llegas?</h2>
-          <div class="formulario">
-            <label class="campo">
-              <span>Entrada</span>
-              <input type="datetime-local" name="inicio" [ngModel]="inicio()" (ngModelChange)="inicio.set($event)" />
-            </label>
-            <label class="campo">
-              <span>Salida</span>
-              <input type="datetime-local" name="fin" [ngModel]="fin()" (ngModelChange)="fin.set($event)" />
-            </label>
-          </div>
-
-          @if (rangoInvalido()) {
-            <p class="aviso mal">La salida debe ser posterior a la entrada.</p>
-          } @else if (!rango()) {
-            <p class="suave pequeno">
-              Elige el horario y te mostramos las habitaciones libres. Pagas en el motel.
+          @if (sinPolitica()) {
+            <p class="aviso info">
+              Este motel todavía no recibe reservas: aún no ha publicado su política de reserva.
             </p>
-          } @else if (disponibles.isLoading()) {
-            <p class="suave">Buscando habitaciones…</p>
-          } @else if (disponibles.error(); as e) {
-            <p class="aviso mal">{{ e.message }}</p>
-          } @else if (lista(disponibles).length === 0) {
-            <p class="vacio">No hay habitaciones libres en ese horario.</p>
           } @else {
-            <ul class="habitaciones">
-              @for (h of lista(disponibles); track h.idHabitacion) {
-                <li>
-                  <div>
-                    <strong>Habitación {{ h.numero }}</strong>
-                    <span class="suave pequeno">
-                      {{ nombreTipo(h.idTipo) }} · {{ capacidadTipo(h.idTipo) }}
-                      @if (h.piso) {
-                        · piso {{ h.piso }}
-                      }
-                    </span>
-                  </div>
-                  @if (esCliente()) {
-                    <a
-                      class="boton-enlace"
-                      [routerLink]="['/reservar', h.idHabitacion]"
-                      [queryParams]="{ inicio: rango()?.inicio }"
-                    >
-                      Reservar
-                    </a>
-                  } @else {
-                    <a routerLink="/login" class="pequeno">Ingresa para reservar</a>
-                  }
-                </li>
-              }
-            </ul>
+            <div class="formulario">
+              <label class="campo">
+                <span>Entrada</span>
+                <input type="datetime-local" name="inicio" [ngModel]="inicio()" (ngModelChange)="inicio.set($event)" />
+              </label>
+              <label class="campo">
+                <span>Salida</span>
+                <input type="datetime-local" name="fin" [ngModel]="fin()" (ngModelChange)="fin.set($event)" />
+              </label>
+            </div>
+
+            @if (rangoInvalido()) {
+              <p class="aviso mal">La salida debe ser posterior a la entrada.</p>
+            } @else if (!rango()) {
+              <p class="suave pequeno">
+                Elige el horario y te mostramos las habitaciones libres. Pagas en el motel.
+              </p>
+            } @else if (disponibles.isLoading()) {
+              <p class="suave">Buscando habitaciones…</p>
+            } @else if (disponibles.error(); as e) {
+              <p class="aviso mal">{{ e.message }}</p>
+            } @else if (lista(disponibles).length === 0) {
+              <p class="vacio">No hay habitaciones libres en ese horario.</p>
+            } @else {
+              <ul class="habitaciones">
+                @for (h of lista(disponibles); track h.idHabitacion) {
+                  <li>
+                    <div>
+                      <strong>Habitación {{ h.numero }}</strong>
+                      <span class="suave pequeno">
+                        {{ nombreTipo(h.idTipo) }} · {{ capacidadTipo(h.idTipo) }}
+                        @if (h.piso) {
+                          · piso {{ h.piso }}
+                        }
+                      </span>
+                    </div>
+                    @if (esCliente()) {
+                      <a
+                        class="boton-enlace"
+                        [routerLink]="['/reservar', h.idHabitacion]"
+                        [queryParams]="{ inicio: rango()?.inicio }"
+                      >
+                        Reservar
+                      </a>
+                    } @else {
+                      <a routerLink="/login" class="pequeno">Ingresa para reservar</a>
+                    }
+                  </li>
+                }
+              </ul>
+            }
           }
         </section>
 
@@ -346,6 +352,9 @@ export class MotelDetalle {
     params: () => this.id(),
     stream: ({ params }) => this.politicaApi.deMotel(params),
   });
+
+  /** El backend no acepta reservas en un motel sin política, así que ni se ofrece buscar. */
+  protected readonly sinPolitica = computed(() => this.politica.hasValue() && this.politica.value() === null);
 
   protected readonly servicios = rxResource({
     params: () => this.id(),
