@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.sql.DataSource;
@@ -41,6 +43,10 @@ public class TipoHabitacionRepository {
 	private static final String SELECT_CARACTERISTICAS = "SELECT c.id_caracteristica, c.nombre, "
 			+ "c.icono FROM caracteristica c JOIN tipo_habitacion_caracteristica thc ON "
 			+ "thc.id_caracteristica = c.id_caracteristica WHERE thc.id_tipo = ? ORDER BY c.nombre";
+
+	private static final String SELECT_CARACTERISTICAS_TODAS = "SELECT thc.id_tipo, c.id_caracteristica, "
+			+ "c.nombre, c.icono FROM caracteristica c JOIN tipo_habitacion_caracteristica thc ON "
+			+ "thc.id_caracteristica = c.id_caracteristica ORDER BY c.nombre";
 
 	private static final String INSERT_CARACTERISTICA = "INSERT INTO tipo_habitacion_caracteristica "
 			+ "(id_tipo, id_caracteristica) VALUES (?, ?)";
@@ -143,15 +149,39 @@ public class TipoHabitacionRepository {
 			try (ResultSet rs = ps.executeQuery()) {
 				List<Caracteristica> lista = new ArrayList<>();
 				while (rs.next()) {
-					Caracteristica c = new Caracteristica();
-					c.setIdCaracteristica(rs.getLong("id_caracteristica"));
-					c.setNombre(rs.getString("nombre"));
-					c.setIcono(rs.getString("icono"));
-					lista.add(c);
+					lista.add(mapearCaracteristica(rs));
 				}
 				return lista;
 			}
 		}
+	}
+
+	/**
+	 * Retorna las características de todos los tipos de habitación en una sola
+	 * consulta, agrupadas por tipo. La usa el resumen del catálogo para no hacer
+	 * una consulta por cada tipo.
+	 *
+	 * @return mapa idTipo → características del tipo ordenadas por nombre
+	 * @throws SQLException si ocurre un error de acceso a la base de datos
+	 */
+	public Map<Long, List<Caracteristica>> findCaracteristicasPorTipo() throws SQLException {
+		try (Connection con = dataSource.getConnection();
+				PreparedStatement ps = con.prepareStatement(SELECT_CARACTERISTICAS_TODAS);
+				ResultSet rs = ps.executeQuery()) {
+			Map<Long, List<Caracteristica>> porTipo = new HashMap<>();
+			while (rs.next()) {
+				porTipo.computeIfAbsent(rs.getLong("id_tipo"), k -> new ArrayList<>()).add(mapearCaracteristica(rs));
+			}
+			return porTipo;
+		}
+	}
+
+	private Caracteristica mapearCaracteristica(ResultSet rs) throws SQLException {
+		Caracteristica c = new Caracteristica();
+		c.setIdCaracteristica(rs.getLong("id_caracteristica"));
+		c.setNombre(rs.getString("nombre"));
+		c.setIcono(rs.getString("icono"));
+		return c;
 	}
 
 	/**

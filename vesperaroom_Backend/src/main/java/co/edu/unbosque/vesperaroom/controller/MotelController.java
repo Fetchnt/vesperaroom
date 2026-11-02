@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import co.edu.unbosque.vesperaroom.dto.MotelDTO;
+import co.edu.unbosque.vesperaroom.dto.MotelResumenDTO;
 import co.edu.unbosque.vesperaroom.entity.Motel.Estado;
 import co.edu.unbosque.vesperaroom.entity.Usuario;
 import co.edu.unbosque.vesperaroom.service.AutorizacionService;
@@ -81,6 +82,20 @@ public class MotelController {
 	@GetMapping("/getall")
 	public ResponseEntity<List<MotelDTO>> obtenerActivos() {
 		return RespuestaGeneral.lista(motelService.getActivos());
+	}
+
+	/**
+	 * Retorna las fichas del catálogo: moteles activos con foto, calificación,
+	 * tarifa más barata y tipos de habitación. Endpoint público.
+	 *
+	 * @return {@link ResponseEntity} con la lista y código 202, o 204 si no hay
+	 *         registros
+	 */
+	@Operation(summary = "Obtener fichas del catálogo", description = "Moteles activos con foto, calificación, "
+			+ "precio desde y tipos de habitación con tarifas y características, en una sola petición.")
+	@GetMapping("/resumen")
+	public ResponseEntity<List<MotelResumenDTO>> obtenerResumen() {
+		return RespuestaGeneral.lista(motelService.getResumen());
 	}
 
 	/**
