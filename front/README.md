@@ -1,7 +1,7 @@
 # VesperaRoom — front
 
 SPA en Angular 22 (standalone + signals, sin librerías de UI ni de estado) sobre la API REST de
-`../src/main/java`.
+`../vesperaroom_Backend/src/main/java`.
 
 ## Arrancar
 
