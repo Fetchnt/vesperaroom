@@ -95,7 +95,9 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/error").permitAll()
 						.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-						.requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
+						.requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register", "/auth/recuperar",
+								"/auth/restablecer")
+						.permitAll()
 						// Catálogo público: consultas que un visitante necesita para buscar y reservar
 						.requestMatchers(HttpMethod.GET, CATALOGO_PUBLICO).permitAll()
 						.requestMatchers("/usuario/mi-cuenta").hasAnyRole(ROLES_TODOS)

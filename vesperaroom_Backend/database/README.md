@@ -1,12 +1,12 @@
 # Scripts de base de datos — VesperaRoom
 
-RDBMS: **MySQL 8.x**. Base de datos: `vesperaroom`. Modelo normalizado a **3FN** con **19 tablas**.
+RDBMS: **MySQL 8.x**. Base de datos: `vesperaroom`. Modelo normalizado a **3FN** con **20 tablas**.
 
 ## Base nueva (desde cero)
 
 | Orden | Script | Contenido |
 |-------|--------|-----------|
-| 1 | `01_creacion_objetos.sql` | Crea la base y las 19 tablas con sus PK, FK, UNIQUE, CHECK e índices. **Borra las tablas existentes.** |
+| 1 | `01_creacion_objetos.sql` | Crea la base y las 20 tablas con sus PK, FK, UNIQUE, CHECK e índices. **Borra las tablas existentes.** |
 | 2 | `02_insercion_registros.sql` | Datos de prueba de todas las tablas, con ids explícitos. |
 | 3 | `03_scripts_varios.sql` | Usuario de aplicación (comentado), vista `v_reserva_detalle` y consultas de apoyo. |
 
@@ -27,10 +27,13 @@ Para una base que ya tiene la tabla `usuario` de la primera iteración:
 | `migraciones/R2__revertir_esquema_3fn.sql` | Revierte V2: borra las 18 tablas y deja solo `usuario`. |
 | `migraciones/V3__reembolso_reserva.sql` | Agrega a `reserva` las columnas `fecha_cancelacion`, `monto_reembolso` y `fecha_limite_reembolso`. |
 | `migraciones/R3__revertir_reembolso_reserva.sql` | Revierte V3: quita esas tres columnas. |
+| `migraciones/V4__codigo_recuperacion.sql` | Crea `codigo_recuperacion` (recuperación de contraseña por correo). |
+| `migraciones/R4__revertir_codigo_recuperacion.sql` | Revierte V4: borra esa tabla. |
 
 ```bash
 mysql -u root -p < migraciones/V2__esquema_3fn.sql
 mysql -u root -p < migraciones/V3__reembolso_reserva.sql
+mysql -u root -p < migraciones/V4__codigo_recuperacion.sql
 ```
 
 Si la base ya se creó con una versión de `01_creacion_objetos.sql` sin las columnas de reembolso, basta con ejecutar V3.
@@ -60,6 +63,7 @@ Todas las cuentas usan la contraseña `Vespera2026`.
 | ciudad | id_ciudad | departamento |
 | usuario | id_usuario | — |
 | perfil_propietario | id_usuario | usuario (1:1) |
+| codigo_recuperacion | id_usuario | usuario (1:1) |
 | motel | id_motel | perfil_propietario, ciudad |
 | politica_reserva | id_motel | motel (1:1) |
 | tipo_habitacion | id_tipo | motel |

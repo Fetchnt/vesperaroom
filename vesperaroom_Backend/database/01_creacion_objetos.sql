@@ -1,7 +1,7 @@
 
 -- VesperaRoom - Script de creación de objetos
 -- RDBMS: MySQL 8.x
--- Descripción: crea la base de datos vesperaroom con las 19 tablas del modelo
+-- Descripción: crea la base de datos vesperaroom con las 20 tablas del modelo
 --              normalizado a tercera forma normal (3FN).
 --              ADVERTENCIA: borra las tablas existentes y sus datos. Para
 --              actualizar una base que ya tiene datos use los scripts de la
@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS tipo_habitacion;
 DROP TABLE IF EXISTS politica_reserva;
 DROP TABLE IF EXISTS motel;
 DROP TABLE IF EXISTS perfil_propietario;
+DROP TABLE IF EXISTS codigo_recuperacion;
 DROP TABLE IF EXISTS usuario;
 DROP TABLE IF EXISTS ciudad;
 DROP TABLE IF EXISTS departamento;
@@ -78,6 +79,22 @@ CREATE TABLE usuario (
 ) ENGINE = InnoDB;
 
 CREATE INDEX ix_usuario_rol ON usuario (rol);
+
+-- Tabla: CODIGO_RECUPERACION
+-- Relación 1:1 con USUARIO: a lo sumo un código vigente por cuenta. Guarda el
+-- hash BCrypt del código, nunca el código en claro.
+CREATE TABLE codigo_recuperacion (
+	id_usuario        BIGINT        NOT NULL,
+	codigo_hash       VARCHAR(100)  NOT NULL,
+	fecha_creacion    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	fecha_expiracion  DATETIME      NOT NULL,
+	intentos          INT           NOT NULL DEFAULT 0,
+	CONSTRAINT pk_codigo_recuperacion PRIMARY KEY (id_usuario),
+	CONSTRAINT fk_codigo_recuperacion_usuario FOREIGN KEY (id_usuario)
+		REFERENCES usuario (id_usuario) ON DELETE CASCADE,
+	CONSTRAINT ck_codigo_recuperacion_intentos CHECK (intentos >= 0),
+	CONSTRAINT ck_codigo_recuperacion_fechas CHECK (fecha_expiracion > fecha_creacion)
+) ENGINE = InnoDB;
 
 -- Tabla: PERFIL_PROPIETARIO
 -- Relación 1:1 con USUARIO: su PK es la FK al usuario dueño del perfil.
