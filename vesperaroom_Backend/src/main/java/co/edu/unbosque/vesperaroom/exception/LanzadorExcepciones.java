@@ -515,16 +515,15 @@ public class LanzadorExcepciones {
 	}
 
 	/**
-	 * Verifica que un nuevo pago no supere el saldo pendiente de la reserva.
+	 * Verifica que un nuevo pago no haya superado el saldo pendiente de la
+	 * reserva. La comparación la hace el repositorio dentro de la transacción,
+	 * con la reserva bloqueada, para que dos pagos simultáneos no pasen los dos.
 	 *
-	 * @param pagado suma de los pagos activos ya registrados
-	 * @param monto  monto del nuevo pago
-	 * @param total  total de la reserva
-	 * @throws MontoExcedidoException si {@code pagado + monto > total}
+	 * @param excedido indica si el pago superaba lo que faltaba por pagar
+	 * @throws MontoExcedidoException si el pago excede el saldo
 	 */
-	public static void verificarSaldo(BigDecimal pagado, BigDecimal monto, BigDecimal total)
-			throws MontoExcedidoException {
-		if (pagado.add(monto).compareTo(total) > 0) {
+	public static void verificarSaldo(boolean excedido) throws MontoExcedidoException {
+		if (excedido) {
 			throw new MontoExcedidoException();
 		}
 	}

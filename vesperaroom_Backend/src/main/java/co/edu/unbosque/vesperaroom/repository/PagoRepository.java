@@ -39,11 +39,15 @@ public class PagoRepository {
 	private static final String SELECT_POR_RESERVA = SELECT_BASE + "WHERE p.id_reserva = ? ORDER BY "
 			+ "p.fecha_pago";
 
+	/** Aprobados y pendientes; los rechazados y reembolsados no cuentan. */
 	private static final String SUMAR_MONTO_ACTIVO = "SELECT COALESCE(SUM(monto), 0) FROM pago "
 			+ "WHERE id_reserva = ? AND estado IN ('APROBADO', 'PENDIENTE')";
 
 	private static final String SUMAR_MONTO_APROBADO = "SELECT COALESCE(SUM(monto), 0) FROM pago "
 			+ "WHERE id_reserva = ? AND estado = 'APROBADO'";
+
+	private static final String BLOQUEAR_RESERVA = "SELECT id_reserva FROM reserva WHERE id_reserva = ? "
+			+ "FOR UPDATE";
 
 	private static final String UPDATE_ESTADO = "UPDATE pago SET estado = ? WHERE id_pago = ?";
 
@@ -97,25 +101,6 @@ public class PagoRepository {
 	 */
 	public List<Pago> findByReserva(Long idReserva) throws SQLException {
 		return listar(SELECT_POR_RESERVA, idReserva);
-	}
-
-	/**
-	 * Suma los pagos aprobados y pendientes de una reserva. Los rechazados y
-	 * reembolsados no cuentan. {@code COALESCE} devuelve 0 cuando no hay pagos.
-	 *
-	 * @param idReserva identificador de la reserva
-	 * @return suma de los montos activos
-	 * @throws SQLException si ocurre un error de acceso a la base de datos
-	 */
-	public BigDecimal sumarMontoActivo(Long idReserva) throws SQLException {
-		try (Connection con = dataSource.getConnection();
-				PreparedStatement ps = con.prepareStatement(SUMAR_MONTO_ACTIVO)) {
-			ps.setLong(1, idReserva);
-			try (ResultSet rs = ps.executeQuery()) {
-				rs.next();
-				return rs.getBigDecimal(1);
-			}
-		}
 	}
 
 	/**
@@ -187,17 +172,58 @@ public class PagoRepository {
 	}
 
 	/**
-	 * Inserta un nuevo pago y retorna el identificador generado por
-	 * {@code AUTO_INCREMENT}.
+	 * Inserta el pago solo si, sumado a los pagos aprobados y pendientes, no
+	 * supera el total de la reserva. La fila de la reserva queda bloqueada con
+	 * {@code SELECT ... FOR UPDATE} durante la transacción: si llegan dos pagos a
+	 * la vez, el segundo espera y ya ve el primero, así que no pueden pasar los
+	 * dos la verificación.
 	 *
-	 * @param p pago a insertar
-	 * @return identificador generado para el nuevo registro
+	 * @param p     pago a insertar
+	 * @param total total de la reserva
+	 * @return identificador generado, o {@code null} si el pago excede lo que
+	 *         falta por pagar
 	 * @throws SQLException si ocurre un error de acceso a la base de datos o se
 	 *                      viola una restricción de la tabla
 	 */
-	public Long insertar(Pago p) throws SQLException {
-		try (Connection con = dataSource.getConnection();
-				PreparedStatement ps = con.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
+	public Long insertarSiHaySaldo(Pago p, BigDecimal total) throws SQLException {
+		try (Connection con = dataSource.getConnection()) {
+			con.setAutoCommit(false);
+			try {
+				try (PreparedStatement ps = con.prepareStatement(BLOQUEAR_RESERVA)) {
+					ps.setLong(1, p.getIdReserva());
+					try (ResultSet rs = ps.executeQuery()) {
+						rs.next();
+					}
+				}
+
+				BigDecimal pagado;
+				try (PreparedStatement ps = con.prepareStatement(SUMAR_MONTO_ACTIVO)) {
+					ps.setLong(1, p.getIdReserva());
+					try (ResultSet rs = ps.executeQuery()) {
+						rs.next();
+						pagado = rs.getBigDecimal(1);
+					}
+				}
+
+				if (pagado.add(p.getMonto()).compareTo(total) > 0) {
+					con.rollback();
+					return null;
+				}
+
+				Long id = insertar(con, p);
+				con.commit();
+				return id;
+			} catch (SQLException e) {
+				con.rollback();
+				throw e;
+			} finally {
+				con.setAutoCommit(true);
+			}
+		}
+	}
+
+	private Long insertar(Connection con, Pago p) throws SQLException {
+		try (PreparedStatement ps = con.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
 			ps.setLong(1, p.getIdReserva());
 			ps.setBigDecimal(2, p.getMonto());
 			ps.setTimestamp(3, Timestamp.valueOf(p.getFechaPago()));

@@ -95,8 +95,6 @@ public class PagoService {
 			LanzadorExcepciones.verificarEstadoReserva(
 					estadoReserva != Reserva.Estado.CANCELADA && estadoReserva != Reserva.Estado.NO_SHOW,
 					"registrar pagos");
-			LanzadorExcepciones.verificarSaldo(pagoRepository.sumarMontoActivo(data.getIdReserva()), data.getMonto(),
-					reserva.get().getTotal());
 			if (data.getReferenciaTransaccion() != null) {
 				LanzadorExcepciones.verificarDuplicado(
 						pagoRepository.existsByReferencia(data.getReferenciaTransaccion()), "esa referencia");
@@ -106,7 +104,8 @@ public class PagoService {
 			entity.setIdPago(null);
 			entity.setFechaPago(LocalDateTime.now());
 			entity.setEstado(Estado.PENDIENTE);
-			pagoRepository.insertar(entity);
+			Long idPago = pagoRepository.insertarSiHaySaldo(entity, reserva.get().getTotal());
+			LanzadorExcepciones.verificarSaldo(idPago == null);
 			return 0;
 
 		} catch (ValorFueraDeRangoException e) {

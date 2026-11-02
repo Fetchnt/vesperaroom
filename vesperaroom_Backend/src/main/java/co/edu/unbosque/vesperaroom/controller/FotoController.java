@@ -57,8 +57,14 @@ public class FotoController {
 	@Operation(summary = "Crear foto (JSON)", description = "Agrega una foto a un motel o habitación propios.")
 	@PostMapping(path = "/createjson", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> crearJSON(@RequestBody FotoDTO nuevo, @AuthenticationPrincipal Usuario actual) {
-		if (!autorizacionService.puedeGestionarMotel(actual, nuevo.getIdMotel())
-				|| !autorizacionService.puedeGestionarHabitacion(actual, nuevo.getIdHabitacion())) {
+		// Una foto es de un motel o de una habitación, así que una de las dos
+		// referencias llega nula: se verifica el dueño de cada una que venga.
+		Long idMotel = nuevo.getIdMotel();
+		Long idHabitacion = nuevo.getIdHabitacion();
+		boolean permitido = (idMotel != null || idHabitacion != null)
+				&& (idMotel == null || autorizacionService.puedeGestionarMotel(actual, idMotel))
+				&& (idHabitacion == null || autorizacionService.puedeGestionarHabitacion(actual, idHabitacion));
+		if (!permitido) {
 			return RespuestaGeneral.prohibido();
 		}
 

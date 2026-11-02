@@ -1,5 +1,7 @@
 package co.edu.unbosque.vesperaroom;
 
+import java.util.TimeZone;
+
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.boot.SpringApplication;
@@ -16,7 +18,16 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class VesperaroomApplication {
 
+	/**
+	 * Zona en la que operan los moteles. Las fechas de reserva son
+	 * {@code LocalDateTime} sin zona y se comparan con el reloj del servidor.
+	 */
+	static final String ZONA_HORARIA = "America/Bogota";
+
 	public static void main(String[] args) {
+		// Antes de arrancar Spring: el pool JDBC y Jackson toman la zona al iniciar.
+		// Sin esto, en un servidor en UTC el planificador cancelaba reservas 5 horas antes.
+		TimeZone.setDefault(TimeZone.getTimeZone(ZONA_HORARIA));
 		SpringApplication.run(VesperaroomApplication.class, args);
 	}
 
