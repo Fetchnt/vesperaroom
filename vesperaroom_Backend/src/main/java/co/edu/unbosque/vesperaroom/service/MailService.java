@@ -28,6 +28,9 @@ public class MailService {
 	 * @throws org.springframework.mail.MailException si el envío falla
 	 */
 	public void enviarCodigoRecuperacion(String correo, String codigo) {
+		if (remitente.isBlank()) {
+			throw new IllegalStateException("correo sin configurar: falta MAIL_USERNAME en .env.properties");
+		}
 		SimpleMailMessage mensaje = new SimpleMailMessage();
 		mensaje.setFrom(remitente);
 		mensaje.setTo(correo);

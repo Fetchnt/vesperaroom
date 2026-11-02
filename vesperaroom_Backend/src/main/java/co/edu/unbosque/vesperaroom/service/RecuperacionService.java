@@ -39,6 +39,8 @@ public class RecuperacionService {
 	private final CodigoRecuperacionRepository codigoRepository;
 	private final MailService mailService;
 	private final PasswordEncoder passwordEncoder;
+	/** Se compara contra este hash cuando no hay código, para que todas las respuestas tarden lo mismo. */
+	private final String hashDeRelleno;
 
 	public RecuperacionService(UsuarioRepository usuarioRepository, CodigoRecuperacionRepository codigoRepository,
 			MailService mailService, PasswordEncoder passwordEncoder) {
@@ -46,6 +48,7 @@ public class RecuperacionService {
 		this.codigoRepository = codigoRepository;
 		this.mailService = mailService;
 		this.passwordEncoder = passwordEncoder;
+		this.hashDeRelleno = passwordEncoder.encode("sin-codigo");
 	}
 
 	/**
@@ -92,15 +95,15 @@ public class RecuperacionService {
 				return 3;
 			}
 			Optional<Usuario> usuario = buscar(data.getCorreo());
-			if (usuario.isEmpty()) {
+			Optional<String> hash = usuario.isPresent()
+					? codigoRepository.gastarIntento(usuario.get().getIdUsuario())
+					: Optional.empty();
+			// Sin cuenta o sin código igual se compara: si no, la respuesta rápida delataría el correo.
+			boolean coincide = passwordEncoder.matches(data.getCodigo().trim(), hash.orElse(hashDeRelleno));
+			if (hash.isEmpty() || !coincide) {
 				return 3;
 			}
-			Long id = usuario.get().getIdUsuario();
-			Optional<String> hash = codigoRepository.gastarIntento(id);
-			if (hash.isEmpty() || !passwordEncoder.matches(data.getCodigo().trim(), hash.get())) {
-				return 3;
-			}
-			codigoRepository.restablecer(id, passwordEncoder.encode(data.getContrasena()));
+			codigoRepository.restablecer(usuario.get().getIdUsuario(), passwordEncoder.encode(data.getContrasena()));
 			return 0;
 
 		} catch (PasswordSizeException e) {
