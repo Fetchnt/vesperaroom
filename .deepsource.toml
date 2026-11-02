@@ -5,7 +5,7 @@ exclude_patterns = [
   "front/.angular/**",
   "vesperaroom_Backend/target/**",
   "vesperaroom_Backend/bin/**",
-  # Script generado del Maven Wrapper: su ${MVNW_PASSWORD:+has-password} es un falso positivo de secretos.
+  # Scripts generados del Maven Wrapper: la variable de contraseña opcional que leen da un falso positivo de secretos.
   "**/mvnw",
   "**/mvnw.cmd",
 ]
