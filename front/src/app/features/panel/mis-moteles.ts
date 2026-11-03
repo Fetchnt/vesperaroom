@@ -26,7 +26,11 @@ import { lista } from '../../shared/recursos';
       [borrar]="borrar"
       [enlace]="enlace"
       [acciones]="acciones"
+      [vistaPrevia]="vista"
     />
+    <ng-template #vista let-m let-fotos="fotos">
+      <app-vista-motel [motel]="m" [foto]="fotos['foto'] ?? null" [ciudad]="nombreCiudad(m['idCiudad'])" />
+    </ng-template>
   `,
 })
 export class MisMoteles {
@@ -54,6 +58,10 @@ export class MisMoteles {
     { clave: 'foto', etiqueta: 'Foto del motel', tipo: 'archivo', oculto: true },
     { clave: 'estado', etiqueta: 'Estado', esEstado: true, soloLectura: true },
   ]);
+
+  protected nombreCiudad(id: unknown): string {
+    return lista(this.ciudades).find((c) => c.idCiudad === id)?.nombre ?? '';
+  }
 
   protected readonly cargar = () => this.motelApi.mios();
 

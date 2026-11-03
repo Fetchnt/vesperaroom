@@ -2,10 +2,10 @@ import { Component, computed, inject, input, linkedSignal, signal } from '@angul
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
-import { HabitacionApi, ModalidadApi, PoliticaApi, ServicioApi, TarifaApi, TipoHabitacionApi } from '../../core/api/entidades';
+import { HabitacionApi, ModalidadApi, MotelApi, PoliticaApi, ServicioApi, TarifaApi, TipoHabitacionApi } from '../../core/api/entidades';
 import type { Reserva, ServicioAdicional } from '../../core/api/models';
 import { ReservaApi } from '../../core/api/entidades';
-import { totalEstimado, type ServicioElegido } from '../../core/reservas/total';
+import { recargoPorPersonas, totalEstimado, type ServicioElegido } from '../../core/reservas/total';
 import { legible } from '../../shared/etiquetas';
 import { lista, valorDe } from '../../shared/recursos';
 
@@ -33,6 +33,63 @@ import { lista, valorDe } from '../../shared/recursos';
         }
 
         <form class="tarjeta pila" (ngSubmit)="enviar()">
+          <div class="pestanas-form" role="tablist" aria-label="Reserva">
+            <button type="button" role="tab" [attr.aria-selected]="!viendoPrevia()" (click)="viendoPrevia.set(false)">
+              Datos
+            </button>
+            <button type="button" role="tab" [attr.aria-selected]="viendoPrevia()" (click)="viendoPrevia.set(true)">
+              Vista previa
+            </button>
+          </div>
+
+          @if (viendoPrevia()) {
+            <div role="tabpanel" class="previa pila">
+              <div>
+                <span class="suave pequeno">{{ d.motel?.nombre ?? 'Motel' }}</span>
+                <h2 style="margin:0">
+                  Habitación {{ d.habitacion?.numero }}
+                  @if (d.tipo) {
+                    <small class="suave">· {{ d.tipo.nombre }}</small>
+                  }
+                </h2>
+              </div>
+              <dl class="detalle">
+                <dt>Entrada</dt>
+                <dd>{{ inicio() ? (inicio() | date: 'EEEE d MMM, h:mm a') : 'Sin elegir' }}</dd>
+                <dt>Salida</dt>
+                <dd>{{ salida() ? (salida() | date: 'EEEE d MMM, h:mm a') : 'Elige entrada y tarifa' }}</dd>
+                <dt>Personas</dt>
+                <dd>
+                  {{ personas() }}
+                  @if (recargo() > 0) {
+                    <small class="suave">(recargo {{ recargo() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }})</small>
+                  }
+                </dd>
+                <dt>Tarifa</dt>
+                <dd>
+                  @if (tarifaElegida(); as t) {
+                    {{ nombreModalidad(t.idModalidad) }} · {{ legible(t.tipoDia) }} ·
+                    {{ t.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                  } @else {
+                    Sin elegir
+                  }
+                </dd>
+                <dt>Servicios</dt>
+                <dd>
+                  @for (e of elegidos(); track e.servicio.idServicio) {
+                    <div>
+                      {{ e.cantidad }} × {{ e.servicio.nombre }} ·
+                      {{ e.servicio.precio * e.cantidad | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                    </div>
+                  } @empty {
+                    Ninguno
+                  }
+                </dd>
+              </dl>
+            </div>
+          }
+
+          <div class="pila" role="tabpanel" [hidden]="viendoPrevia()">
           <div class="formulario">
             <label class="campo">
               <span>Entrada</span>
@@ -107,6 +164,8 @@ import { lista, valorDe } from '../../shared/recursos';
             </fieldset>
           }
 
+          </div>
+
           <div class="fila entre resumen">
             <div>
               <span class="suave pequeno">Total estimado</span>
@@ -151,6 +210,25 @@ import { lista, valorDe } from '../../shared/recursos';
     .resumen {
       align-items: flex-end;
     }
+    .previa {
+      padding: 4px 0;
+    }
+    .detalle {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 8px 20px;
+      margin: 0;
+    }
+    .detalle dt {
+      color: var(--texto-suave);
+      font-size: 0.85rem;
+    }
+    .detalle dd {
+      margin: 0;
+    }
+    .detalle dd::first-letter {
+      text-transform: uppercase;
+    }
     .total {
       display: block;
       font-size: 1.4rem;
@@ -175,6 +253,7 @@ export class Reservar {
   private readonly servicioApi = inject(ServicioApi);
   private readonly politicaApi = inject(PoliticaApi);
   private readonly modalidadApi = inject(ModalidadApi);
+  private readonly motelApi = inject(MotelApi);
   private readonly reservaApi = inject(ReservaApi);
   private readonly router = inject(Router);
 
@@ -187,6 +266,7 @@ export class Reservar {
   protected readonly cantidades = signal<Record<number, number>>({});
   protected readonly enviando = signal(false);
   protected readonly error = signal('');
+  protected readonly viendoPrevia = signal(false);
 
   /**
    * Todo lo que hace falta para armar la reserva. La habitación da el tipo y el
@@ -198,10 +278,11 @@ export class Reservar {
       this.habitacionApi.crud.getById(params).pipe(
         switchMap((habitacion) => {
           if (!habitacion) {
-            return of({ habitacion: null, tipo: null, tarifas: [], servicios: [], politica: null });
+            return of({ habitacion: null, motel: null, tipo: null, tarifas: [], servicios: [], politica: null });
           }
           return forkJoin({
             habitacion: of(habitacion),
+            motel: habitacion.idMotel ? this.motelApi.crud.getById(habitacion.idMotel) : of(null),
             tipo: this.tipoApi.crud.getById(habitacion.idTipo),
             tarifas: this.tarifaApi.porTipo(habitacion.idTipo),
             servicios: habitacion.idMotel ? this.servicioApi.porMotel(habitacion.idMotel) : of([]),
@@ -221,6 +302,25 @@ export class Reservar {
     return (valorDe(this.datos, null)?.servicios ?? [])
       .filter((s) => (cantidades[s.idServicio!] ?? 0) > 0)
       .map((servicio) => ({ servicio, cantidad: cantidades[servicio.idServicio!] }));
+  });
+
+  protected readonly tarifaElegida = computed(
+    () => valorDe(this.datos, null)?.tarifas.find((t) => t.idTarifa === this.idTarifa()) ?? null,
+  );
+
+  protected readonly recargo = computed(() =>
+    recargoPorPersonas(valorDe(this.datos, null)?.politica ?? null, Number(this.personas())),
+  );
+
+  /** Estimada en el navegador con la duración de la modalidad; el backend la fija al crear. */
+  protected readonly salida = computed(() => {
+    const tarifa = this.tarifaElegida();
+    const modalidad = lista(this.modalidades).find((m) => m.idModalidad === tarifa?.idModalidad);
+    const inicio = new Date(this.inicio());
+    if (!modalidad || Number.isNaN(inicio.getTime())) {
+      return null;
+    }
+    return new Date(inicio.getTime() + modalidad.duracionHoras * 3_600_000);
   });
 
   protected readonly total = computed(() => {

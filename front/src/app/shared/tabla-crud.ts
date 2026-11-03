@@ -6,6 +6,7 @@ import {
   input,
   type OnDestroy,
   signal,
+  type TemplateRef,
   untracked,
   viewChild,
 } from '@angular/core';
@@ -151,7 +152,26 @@ function normalizar(texto: string): string {
       @if (formAbierto()) {
         <form class="tarjeta pila" (ngSubmit)="enviar()">
           <h3>{{ editandoId() === null ? 'Nuevo registro' : 'Editar registro' }}</h3>
-          <div class="formulario">
+          @if (vistaPrevia(); as plantilla) {
+            <div class="pestanas-form" role="tablist" aria-label="Formulario">
+              <button type="button" role="tab" [attr.aria-selected]="!viendoPrevia()" (click)="viendoPrevia.set(false)">
+                Datos
+              </button>
+              <button type="button" role="tab" [attr.aria-selected]="viendoPrevia()" (click)="viendoPrevia.set(true)">
+                Vista previa
+              </button>
+            </div>
+            @if (viendoPrevia()) {
+              <div role="tabpanel">
+                <ng-container
+                  [ngTemplateOutlet]="plantilla"
+                  [ngTemplateOutletContext]="{ $implicit: borrador(), fotos: vistas() }"
+                />
+              </div>
+            }
+          }
+          <!-- Se oculta en lugar de quitarse para que el archivo elegido no se pierda -->
+          <div class="formulario" [hidden]="viendoPrevia()" [attr.role]="vistaPrevia() ? 'tabpanel' : null">
             @for (campo of camposEditables(); track campo.clave) {
               <label class="campo">
                 <span>{{ campo.etiqueta }}</span>
@@ -463,6 +483,11 @@ export class TablaCrud implements OnDestroy {
   readonly enlace = input<((fila: Registro) => (string | number)[]) | null>(null);
   readonly textoEnlace = input('Abrir');
   readonly acciones = input<AccionFila[]>([]);
+  /**
+   * Plantilla de la pestaña «Vista previa» del formulario. Recibe el borrador
+   * como `$implicit` y las URLs de las imágenes elegidas en `fotos`.
+   */
+  readonly vistaPrevia = input<TemplateRef<{ $implicit: Registro; fotos: Record<string, string> }> | null>(null);
 
   protected readonly legible = legible;
   private readonly dialogo = viewChild.required<ElementRef<HTMLDialogElement>>('dialogo');
@@ -479,6 +504,7 @@ export class TablaCrud implements OnDestroy {
   protected readonly consulta = signal('');
   protected readonly estado = signal<string | null>(null);
   protected readonly pendiente = signal<Pendiente | null>(null);
+  protected readonly viendoPrevia = signal(false);
   /** URLs temporales de las imágenes elegidas en los campos de archivo. */
   protected readonly vistas = signal<Record<string, string>>({});
 
@@ -663,6 +689,7 @@ export class TablaCrud implements OnDestroy {
 
   protected cancelar(): void {
     this.formAbierto.set(false);
+    this.viendoPrevia.set(false);
     this.borrador.set({});
     this.editandoId.set(null);
     this.soltarVistas();

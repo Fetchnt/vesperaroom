@@ -23,7 +23,11 @@ import { lista } from '../../shared/recursos';
       [acciones]="acciones"
       [enlace]="gestionar"
       textoEnlace="Gestionar"
+      [vistaPrevia]="vista"
     />
+    <ng-template #vista let-m let-fotos="fotos">
+      <app-vista-motel [motel]="m" [foto]="fotos['foto'] ?? null" [ciudad]="nombreCiudad(m['idCiudad'])" />
+    </ng-template>
   `,
 })
 export class MotelesAdmin {
@@ -69,6 +73,10 @@ export class MotelesAdmin {
     { clave: 'foto', etiqueta: 'Foto del motel', tipo: 'archivo', oculto: true },
     { clave: 'estado', etiqueta: 'Estado', esEstado: true, soloLectura: true },
   ]);
+
+  protected nombreCiudad(id: unknown): string {
+    return lista(this.ciudades).find((c) => c.idCiudad === id)?.nombre ?? '';
+  }
 
   protected readonly cargar = () => this.api.todos();
   /** La foto elegida no es parte del motel: se sube aparte a la tabla foto. */

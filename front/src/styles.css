@@ -464,3 +464,34 @@ tbody tr:last-child td {
     min-height: 160px;
   }
 }
+
+/* Las clases con display (como .formulario) le ganan al atributo hidden. */
+[hidden] {
+  display: none !important;
+}
+
+/* ---------- Pestañas de formulario (Datos / Vista previa) ---------- */
+
+.pestanas-form {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.pestanas-form button {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 8px 14px;
+  color: var(--texto-suave);
+}
+
+.pestanas-form button:hover:not(:disabled) {
+  color: var(--texto);
+}
+
+.pestanas-form button[aria-selected='true'] {
+  color: var(--marca);
+  border-bottom-color: var(--marca-solida);
+}

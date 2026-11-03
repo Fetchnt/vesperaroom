@@ -1,3 +1,4 @@
+import { Component, NgModule } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -14,6 +15,22 @@ const FILAS: Registro[] = [
   { id: 2, nombre: 'Motel Luna', estado: 'CONFIRMADA' },
   { id: 3, nombre: 'Motel Sol', estado: 'PENDIENTE' },
 ];
+
+@Component({
+  standalone: false,
+  template: `
+    <app-tabla-crud claveId="id" [campos]="campos" [cargar]="cargar" [guardar]="guardar" [vistaPrevia]="vista" />
+    <ng-template #vista let-m><p class="previa">Previa: {{ m['nombre'] }}</p></ng-template>
+  `,
+})
+class Anfitrion {
+  campos = CAMPOS;
+  cargar = () => of(FILAS);
+  guardar = () => of('ok');
+}
+
+@NgModule({ declarations: [Anfitrion], imports: [SharedModule] })
+class ModuloAnfitrion {}
 
 function montar(acciones: AccionFila[] = []) {
   // jsdom no implementa <dialog>: basta con que showModal/close abran y cierren
@@ -80,6 +97,32 @@ describe('TablaCrud', () => {
     boton('Todos').click();
     fixture.detectChanges();
     expect(filas()).toBe(3);
+  });
+
+  it('la pestaña Vista previa recibe el borrador y los datos se conservan', async () => {
+    TestBed.configureTestingModule({ imports: [ModuloAnfitrion], providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(Anfitrion);
+    fixture.detectChanges();
+    const dom = fixture.nativeElement as HTMLElement;
+    const boton = (texto: string) => [...dom.querySelectorAll('button')].find((b) => b.textContent?.trim() === texto)!;
+
+    boton('Agregar').click();
+    fixture.detectChanges();
+    // ngModel escribe su valor inicial en una microtarea: hay que esperarla antes de teclear
+    await fixture.whenStable();
+    const nombre = dom.querySelector<HTMLInputElement>('.formulario input')!;
+    nombre.value = 'Motel Aurora';
+    nombre.dispatchEvent(new Event('input'));
+
+    boton('Vista previa').click();
+    fixture.detectChanges();
+    expect(dom.querySelector('.previa')?.textContent).toContain('Motel Aurora');
+    expect(dom.querySelector('.formulario')!.hasAttribute('hidden')).toBe(true);
+
+    boton('Datos').click();
+    fixture.detectChanges();
+    expect(dom.querySelector('.previa')).toBeNull();
+    expect(dom.querySelector<HTMLInputElement>('.formulario input')!.value).toBe('Motel Aurora');
   });
 
   it('solo ejecuta la acción si se confirma en el diálogo', () => {
