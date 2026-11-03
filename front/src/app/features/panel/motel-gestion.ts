@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { forkJoin, map, of, switchMap } from 'rxjs';
+import { forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { CaracteristicaApi, FotoApi, HabitacionApi, ModalidadApi, MotelApi, PoliticaApi, ServicioApi, TarifaApi, TipoHabitacionApi } from '../../core/api/entidades';
 import type {
   EstadoHabitacion,
@@ -134,6 +134,11 @@ const ESTADOS_HABITACION: EstadoHabitacion[] = ['ACTIVA', 'MANTENIMIENTO', 'FUER
       }
 
       @case ('habitaciones') {
+        @if (lista(tipos).length === 0) {
+          <p class="vacio">
+            Para crear habitaciones, primero crea un tipo en la pestaña «Tipos de habitación».
+          </p>
+        }
         <app-tabla-crud
           titulo="Habitaciones"
           descripcion="El estado se cambia con los botones; el resto con el formulario."
@@ -333,14 +338,19 @@ export class MotelGestion {
     return () => this.tipoApi.porMotel(id);
   });
 
+  /**
+   * Las otras pestañas (habitaciones, tarifas, características) arman su lista de
+   * tipos con el recurso `tipos`, así que se recarga cada vez que cambia uno.
+   */
   protected readonly guardarTipo = (idFila: number | string | null, dto: Registro) => {
     const tipo = { ...dto, idMotel: this.idMotel() } as unknown as TipoHabitacion;
-    return idFila === null
-      ? this.tipoApi.crud.crear(tipo)
-      : this.tipoApi.crud.actualizar(idFila, tipo);
+    return (
+      idFila === null ? this.tipoApi.crud.crear(tipo) : this.tipoApi.crud.actualizar(idFila, tipo)
+    ).pipe(tap(() => this.tipos.reload()));
   };
 
-  protected readonly borrarTipo = (idFila: number | string) => this.tipoApi.crud.eliminar(idFila);
+  protected readonly borrarTipo = (idFila: number | string) =>
+    this.tipoApi.crud.eliminar(idFila).pipe(tap(() => this.tipos.reload()));
 
   // ---------- Características del tipo ----------
 
@@ -416,13 +426,15 @@ export class MotelGestion {
 
   protected readonly guardarHabitacion = (idFila: number | string | null, dto: Registro) => {
     const habitacion = dto as unknown as Habitacion;
-    return idFila === null
+    return (idFila === null
       ? this.habitacionApi.crud.crear(habitacion)
-      : this.habitacionApi.crud.actualizar(idFila, habitacion);
+      : this.habitacionApi.crud.actualizar(idFila, habitacion)
+    ).pipe(tap(() => this.habitaciones.reload()));
   };
 
+  /** La pestaña Fotos lista las habitaciones con el recurso `habitaciones`. */
   protected readonly borrarHabitacion = (idFila: number | string) =>
-    this.habitacionApi.crud.eliminar(idFila);
+    this.habitacionApi.crud.eliminar(idFila).pipe(tap(() => this.habitaciones.reload()));
 
   /** /habitacion/updateestado: el estado no viaja por updatejson. */
   protected readonly accionesHabitacion: AccionFila[] = ESTADOS_HABITACION.map((estado) => ({
