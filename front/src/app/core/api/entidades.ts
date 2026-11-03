@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { catchError, forkJoin, map, of, switchMap, type Observable } from 'rxjs';
-import { Api, crud, type Id } from './api';
+import { Api, crud, type Id, type Params } from './api';
 import type {
   Caracteristica,
   Ciudad,
@@ -226,7 +226,12 @@ export class FotoApi {
 
   /** Sube una imagen del equipo; el backend la guarda y registra su dirección. */
   subir(archivo: File, datos: { idMotel?: Id; idHabitacion?: Id; orden?: number }): Observable<string> {
-    return this.api.subir('/foto/subir', archivo, datos);
+    // HttpParams enviaría los vacíos como el texto "undefined", y el backend no lo
+    // puede convertir a número: los parámetros sin valor simplemente no se mandan.
+    const params = Object.fromEntries(
+      Object.entries(datos).filter(([, valor]) => valor !== undefined && valor !== null),
+    ) as Params;
+    return this.api.subir('/foto/subir', archivo, params);
   }
 
   porMotel(idMotel: Id): Observable<Foto[]> {

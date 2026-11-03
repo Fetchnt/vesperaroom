@@ -99,11 +99,11 @@ INSERT INTO habitacion (id_habitacion, id_motel, id_tipo, numero, piso, estado) 
 
 -- Fotos: las de motel llevan id_motel y las de habitación id_habitacion
 INSERT INTO foto (id_foto, id_motel, id_habitacion, uri, orden) VALUES
-	(1, 1,    NULL, 'https://cdn.vesperaroom.com/moteles/luna/fachada.jpg',      1),
-	(2, NULL, 3,    'https://cdn.vesperaroom.com/moteles/luna/201-jacuzzi.jpg',  1),
-	(3, NULL, 3,    'https://cdn.vesperaroom.com/moteles/luna/201-cama.jpg',     2),
-	(4, 3,    NULL, 'https://cdn.vesperaroom.com/moteles/sol/fachada.jpg',       1),
-	(5, NULL, 9,    'https://cdn.vesperaroom.com/moteles/sol/401-sala.jpg',      1);
+	(1, 1,    NULL, 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1200&q=80', 1),
+	(2, NULL, 3,    'https://images.unsplash.com/photo-1620626011761-996317b8d101?w=1200&q=80', 1),
+	(3, NULL, 3,    'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=1200&q=80', 2),
+	(4, 3,    NULL, 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=80', 1),
+	(5, NULL, 9,    'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1200&q=80', 1);
 
 -- -----------------------------------------------------------------------------
 -- Modalidades y tarifas
