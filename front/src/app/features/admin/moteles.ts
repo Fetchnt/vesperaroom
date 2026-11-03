@@ -66,6 +66,8 @@ export class MotelesAdmin {
       })),
     },
     { clave: 'descripcion', etiqueta: 'Descripción', tipo: 'area', oculto: true },
+    { clave: 'latitud', etiqueta: 'Latitud', tipo: 'decimal', oculto: true },
+    { clave: 'longitud', etiqueta: 'Longitud', tipo: 'decimal', oculto: true },
     { clave: 'foto', etiqueta: 'Foto del motel', tipo: 'archivo', oculto: true },
     { clave: 'estado', etiqueta: 'Estado', esEstado: true, soloLectura: true },
   ]);
