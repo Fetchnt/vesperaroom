@@ -40,9 +40,7 @@ En `vesperaroom_Backend/` cree el archivo `.env.properties` (está en `.gitignor
 
 ```properties
 DB_USER=usuario
-DB_PASSWORD=<contraseña del usuario de MySQL>
 JWT_SECRET=<clave de al menos 32 caracteres>
-ADMIN_PASSWORD=<contraseña del administrador que se crea al arrancar>
 ```
 
 ```bash
