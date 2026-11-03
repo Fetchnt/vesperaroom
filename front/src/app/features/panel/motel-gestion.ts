@@ -536,7 +536,7 @@ export class MotelGestion {
 
   protected readonly camposFoto = computed<Campo[]>(() => [
     { clave: 'archivo', etiqueta: 'Imagen', tipo: 'archivo', requerido: true, oculto: true, soloAlCrear: true },
-    { clave: 'uri', etiqueta: 'Dirección', soloLectura: true },
+    { clave: 'uri', etiqueta: 'Foto', tipo: 'imagen', soloLectura: true },
     { clave: 'orden', etiqueta: 'Orden (vacío: al final)', tipo: 'numero' },
     {
       clave: 'idHabitacion',

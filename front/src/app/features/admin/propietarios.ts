@@ -64,7 +64,7 @@ export class Propietarios {
       })),
     },
     { clave: 'numeroCuenta', etiqueta: 'Cuenta', requerido: true },
-    { clave: 'fechaVerificacion', etiqueta: 'Verificado', soloLectura: true },
+    { clave: 'fechaVerificacion', etiqueta: 'Verificado', tipo: 'fechaHora', soloLectura: true },
   ]);
 
   protected readonly cargar = () => this.api.crud.getAll();

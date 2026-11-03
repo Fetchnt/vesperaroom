@@ -75,8 +75,8 @@ export class ReservasMotel {
 
   protected readonly campos: Campo[] = [
     { clave: 'codigoReserva', etiqueta: 'Código' },
-    { clave: 'fechaHoraInicio', etiqueta: 'Entrada' },
-    { clave: 'fechaHoraFin', etiqueta: 'Salida' },
+    { clave: 'fechaHoraInicio', etiqueta: 'Entrada', tipo: 'fechaHora' },
+    { clave: 'fechaHoraFin', etiqueta: 'Salida', tipo: 'fechaHora' },
     { clave: 'cantidadPersonas', etiqueta: 'Personas' },
     { clave: 'total', etiqueta: 'Total', tipo: 'decimal' },
     { clave: 'estado', etiqueta: 'Estado', esEstado: true },

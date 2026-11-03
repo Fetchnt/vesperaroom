@@ -34,7 +34,7 @@ export class PagosAdmin {
     { clave: 'idReserva', etiqueta: 'Reserva' },
     { clave: 'monto', etiqueta: 'Monto', tipo: 'decimal' },
     { clave: 'metodoPago', etiqueta: 'Método' },
-    { clave: 'fechaPago', etiqueta: 'Fecha' },
+    { clave: 'fechaPago', etiqueta: 'Fecha', tipo: 'fechaHora' },
     { clave: 'referenciaTransaccion', etiqueta: 'Referencia' },
     { clave: 'estado', etiqueta: 'Estado', esEstado: true },
   ];
