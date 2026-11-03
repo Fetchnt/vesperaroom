@@ -44,6 +44,9 @@ public class RespuestaFoto {
 			return new ResponseEntity<>("Ya hay otra foto en esa posición", HttpStatus.CONFLICT);
 		case 7:
 			return new ResponseEntity<>("Foto no encontrada", HttpStatus.NOT_FOUND);
+		case 9:
+			return new ResponseEntity<>("La foto debe ser una imagen JPG, PNG o WEBP de máximo 5 MB",
+					HttpStatus.BAD_REQUEST);
 		default:
 			return new ResponseEntity<>("Error al procesar la foto", HttpStatus.INTERNAL_SERVER_ERROR);
 		}

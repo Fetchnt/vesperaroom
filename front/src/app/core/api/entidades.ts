@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { forkJoin, map, of, switchMap, type Observable } from 'rxjs';
+import { catchError, forkJoin, map, of, switchMap, type Observable } from 'rxjs';
 import { Api, crud, type Id } from './api';
 import type {
   Caracteristica,
@@ -129,6 +129,29 @@ export class MotelApi {
     return this.api.lista<Motel>('/motel/mis-moteles');
   }
 
+  /**
+   * Crea o actualiza un motel y, si se eligió una imagen, la sube como foto suya.
+   * Al crear, el id del motel nuevo llega en la cabecera Location. Si la imagen
+   * falla el motel ya quedó guardado, así que se avisa sin tratarlo como error.
+   */
+  guardar(id: Id | null, motel: Motel, foto: File | null): Observable<string> {
+    const guardado =
+      id === null
+        ? this.api.crearConId('/motel/createjson', motel)
+        : this.crud.actualizar(id, motel).pipe(map((mensaje) => ({ mensaje, id })));
+
+    return guardado.pipe(
+      switchMap(({ mensaje, id: idMotel }) =>
+        !foto || idMotel === null
+          ? of(mensaje)
+          : this.api.subir('/foto/subir', foto, { idMotel }).pipe(
+              map(() => `${mensaje} con su foto`),
+              catchError((e: Error) => of(`${mensaje}, pero la foto no se subió: ${e.message}`)),
+            ),
+      ),
+    );
+  }
+
   cambiarEstado(id: Id, estado: EstadoMotel): Observable<string> {
     return this.api.actualizar('/motel/updateestado', null, { id, estado });
   }
@@ -200,6 +223,11 @@ export class HabitacionApi {
 export class FotoApi {
   private readonly api = inject(Api);
   readonly crud = crud<Foto>('foto');
+
+  /** Sube una imagen del equipo; el backend la guarda y registra su dirección. */
+  subir(archivo: File, datos: { idMotel?: Id; idHabitacion?: Id; orden?: number }): Observable<string> {
+    return this.api.subir('/foto/subir', archivo, datos);
+  }
 
   porMotel(idMotel: Id): Observable<Foto[]> {
     return this.api.lista<Foto>(`/foto/getbymotel/${idMotel}`);

@@ -98,6 +98,7 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
 						// Catálogo público: consultas que un visitante necesita para buscar y reservar
 						.requestMatchers(HttpMethod.GET, CATALOGO_PUBLICO).permitAll()
+						.requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 						.requestMatchers("/usuario/mi-cuenta").hasAnyRole(ROLES_TODOS)
 						.requestMatchers("/usuario/**").hasRole(ADMIN)
 						.requestMatchers("/departamento/**", "/ciudad/**", "/caracteristica/**", "/modalidad/**")
@@ -136,6 +137,8 @@ public class SecurityConfig {
 		config.setAllowedOrigins(allowedOrigins);
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 		config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+		// Al crear un motel, el front lee su id de la cabecera Location
+		config.setExposedHeaders(List.of("Location"));
 		config.setAllowCredentials(true);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

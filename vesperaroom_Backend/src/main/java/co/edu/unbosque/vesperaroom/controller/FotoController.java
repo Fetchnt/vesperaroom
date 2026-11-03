@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import co.edu.unbosque.vesperaroom.dto.FotoDTO;
 import co.edu.unbosque.vesperaroom.entity.Usuario;
@@ -78,6 +80,23 @@ public class FotoController {
 	 * @return {@link ResponseEntity} con la lista y código 202, o 204 si no hay
 	 *         registros
 	 */
+	@Operation(summary = "Subir foto", description = "Sube una imagen desde el equipo para un motel o habitación propios.")
+	@PostMapping(path = "/subir", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<String> subir(@RequestParam MultipartFile archivo, @RequestParam(required = false) Long idMotel,
+			@RequestParam(required = false) Long idHabitacion, @RequestParam(required = false) Integer orden,
+			@AuthenticationPrincipal Usuario actual) {
+		boolean permitido = (idMotel != null || idHabitacion != null)
+				&& (idMotel == null || autorizacionService.puedeGestionarMotel(actual, idMotel))
+				&& (idHabitacion == null || autorizacionService.puedeGestionarHabitacion(actual, idHabitacion));
+		if (!permitido) {
+			return RespuestaGeneral.prohibido();
+		}
+
+		String urlBase = ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
+		int status = fotoService.subir(archivo, idMotel, idHabitacion, orden, urlBase);
+		return RespuestaFoto.guardar(status, "Foto subida exitosamente", HttpStatus.CREATED);
+	}
+
 	@Operation(summary = "Obtener fotos", description = "Retorna todas las fotos. Solo ADMINISTRADOR.")
 	@GetMapping("/getall")
 	public ResponseEntity<List<FotoDTO>> obtenerTodas() {

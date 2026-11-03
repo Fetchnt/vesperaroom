@@ -134,6 +134,20 @@ public class FotoRepository {
 	}
 
 	/**
+	 * Calcula la primera posición libre al final de las fotos de un dueño.
+	 *
+	 * @param idMotel      motel dueño (o nulo)
+	 * @param idHabitacion habitación dueña (o nula)
+	 * @return la posición mayor más uno, o 1 si aún no tiene fotos
+	 * @throws SQLException si ocurre un error de acceso a la base de datos
+	 */
+	public int siguienteOrden(Long idMotel, Long idHabitacion) throws SQLException {
+		return idMotel != null
+				? (int) contar("SELECT COALESCE(MAX(orden), 0) + 1 FROM foto WHERE id_motel = ?", idMotel)
+				: (int) contar("SELECT COALESCE(MAX(orden), 0) + 1 FROM foto WHERE id_habitacion = ?", idHabitacion);
+	}
+
+	/**
 	 * Verifica si existe una foto con el identificador indicado.
 	 *
 	 * @param id identificador a verificar
