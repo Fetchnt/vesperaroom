@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, type Routes } from '@angular/router';
+import { MarcoGestion } from '../../shared/marco-gestion';
 import { SharedModule } from '../../shared/shared-module';
 import { MiPerfil } from './mi-perfil';
 import { MisMoteles } from './mis-moteles';
@@ -9,12 +10,18 @@ import { ResenasMotel } from './resenas-motel';
 import { ReservasMotel } from './reservas-motel';
 
 const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'moteles' },
-  { path: 'moteles', title: 'Mis moteles · VesperaRoom', component: MisMoteles },
-  { path: 'moteles/:id', title: 'Gestión del motel · VesperaRoom', component: MotelGestion },
-  { path: 'reservas', title: 'Reservas · VesperaRoom', component: ReservasMotel },
-  { path: 'resenas', title: 'Reseñas · VesperaRoom', component: ResenasMotel },
-  { path: 'perfil', title: 'Mi perfil · VesperaRoom', component: MiPerfil },
+  {
+    path: '',
+    component: MarcoGestion,
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'moteles' },
+      { path: 'moteles', title: 'Mis moteles · VesperaRoom', component: MisMoteles },
+      { path: 'moteles/:id', title: 'Gestión del motel · VesperaRoom', component: MotelGestion },
+      { path: 'reservas', title: 'Reservas · VesperaRoom', component: ReservasMotel },
+      { path: 'resenas', title: 'Reseñas · VesperaRoom', component: ResenasMotel },
+      { path: 'perfil', title: 'Mi perfil · VesperaRoom', component: MiPerfil },
+    ],
+  },
 ];
 
 @NgModule({

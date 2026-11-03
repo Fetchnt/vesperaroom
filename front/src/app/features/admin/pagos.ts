@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
-import { PagoApi } from '../../core/api/entidades';
+import { Component, computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { PagoApi, ReservaApi } from '../../core/api/entidades';
 import type { EstadoPago } from '../../core/api/models';
+import { lista } from '../../shared/recursos';
 import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 
 const ACCIONES: { estado: EstadoPago; texto: string; peligro?: boolean }[] = [
@@ -20,7 +22,7 @@ const ACCIONES: { estado: EstadoPago; texto: string; peligro?: boolean }[] = [
       titulo="Pagos"
       claveId="idPago"
       sinDatos="No hay pagos registrados."
-      [campos]="campos"
+      [campos]="campos()"
       [cargar]="cargar"
       [acciones]="acciones"
     />
@@ -29,15 +31,24 @@ const ACCIONES: { estado: EstadoPago; texto: string; peligro?: boolean }[] = [
 export class PagosAdmin {
   private readonly api = inject(PagoApi);
 
-  protected readonly campos: Campo[] = [
+  private readonly reservaApi = inject(ReservaApi);
+  private readonly reservas = rxResource({ stream: () => this.reservaApi.crud.getAll(), defaultValue: [] });
+
+  /** La reserva se muestra por su código; mientras llega la lista se ve el id. */
+  protected readonly campos = computed<Campo[]>(() => [
     { clave: 'idPago', etiqueta: 'ID' },
-    { clave: 'idReserva', etiqueta: 'Reserva' },
+    {
+      clave: 'idReserva',
+      etiqueta: 'Reserva',
+      tipo: 'select',
+      opciones: lista(this.reservas).map((r) => ({ valor: r.idReserva!, texto: r.codigoReserva! })),
+    },
     { clave: 'monto', etiqueta: 'Monto', tipo: 'decimal' },
     { clave: 'metodoPago', etiqueta: 'Método' },
-    { clave: 'fechaPago', etiqueta: 'Fecha' },
+    { clave: 'fechaPago', etiqueta: 'Fecha', tipo: 'fechaHora' },
     { clave: 'referenciaTransaccion', etiqueta: 'Referencia' },
     { clave: 'estado', etiqueta: 'Estado', esEstado: true },
-  ];
+  ]);
 
   protected readonly cargar = () => this.api.crud.getAll();
 

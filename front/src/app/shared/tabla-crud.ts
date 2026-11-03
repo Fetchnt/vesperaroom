@@ -1,10 +1,30 @@
-import { Component, computed, effect, input, signal, untracked } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  type ElementRef,
+  input,
+  type OnDestroy,
+  signal,
+  type TemplateRef,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { Id } from '../core/api/api';
 import { legible } from './etiquetas';
 
 export type TipoCampo =
-  'texto' | 'numero' | 'decimal' | 'fecha' | 'fechaHora' | 'area' | 'select' | 'booleano' | 'archivo';
+  | 'texto'
+  | 'numero'
+  | 'decimal'
+  | 'fecha'
+  | 'fechaHora'
+  | 'area'
+  | 'select'
+  | 'booleano'
+  | 'archivo'
+  | 'imagen';
 
 export interface Opcion {
   valor: string | number;
@@ -43,6 +63,56 @@ export interface AccionFila {
   confirmar?: string;
 }
 
+interface Pendiente {
+  pregunta: string;
+  boton: string;
+  peligro: boolean;
+  hacer: () => void;
+}
+
+const FORMATO_FECHA: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+const FORMATO_HORA: Intl.DateTimeFormatOptions = { ...FORMATO_FECHA, hour: 'numeric', minute: '2-digit' };
+
+/**
+ * Texto de una celda. Las fechas del backend llegan sin zona (LocalDate y
+ * LocalDateTime), así que se leen como hora local: `new Date('2026-11-02')`
+ * a secas sería medianoche UTC y en Bogotá mostraría el día anterior.
+ */
+export function textoCelda(valor: unknown, campo: Campo): string {
+  if (valor === null || valor === undefined || valor === '') {
+    return '—';
+  }
+  if (typeof valor === 'boolean') {
+    return valor ? 'Sí' : 'No';
+  }
+  if (campo.tipo === 'select') {
+    const opcion = (campo.opciones ?? []).find((o) => o.valor === valor);
+    return opcion ? opcion.texto : String(valor);
+  }
+  if (campo.esEstado) {
+    return String(valor);
+  }
+  if (campo.tipo === 'decimal') {
+    return Number(valor).toLocaleString('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    });
+  }
+  if ((campo.tipo === 'fecha' || campo.tipo === 'fechaHora') && typeof valor === 'string') {
+    const fecha = new Date(valor.length === 10 ? `${valor}T00:00` : valor);
+    if (!Number.isNaN(fecha.getTime())) {
+      return fecha.toLocaleString('es-CO', campo.tipo === 'fecha' ? FORMATO_FECHA : FORMATO_HORA);
+    }
+  }
+  return typeof valor === 'string' && /^[A-Z_]{3,}$/.test(valor) ? legible(valor) : String(valor);
+}
+
+/** Minúsculas y sin tildes, para que «sanchez» encuentre «Sánchez». */
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+}
+
 /**
  * Tabla con formulario de alta y edición. La usan las pantallas cuyo CRUD es
  * el genérico del backend (catálogos, tipos de habitación, tarifas, servicios,
@@ -73,16 +143,35 @@ export interface AccionFila {
       </div>
 
       @if (error(); as texto) {
-        <p class="aviso mal">{{ texto }}</p>
+        <p class="aviso mal" role="alert">{{ texto }}</p>
       }
       @if (mensaje(); as texto) {
-        <p class="aviso ok">{{ texto }}</p>
+        <p class="aviso ok" role="status">{{ texto }}</p>
       }
 
       @if (formAbierto()) {
         <form class="tarjeta pila" (ngSubmit)="enviar()">
           <h3>{{ editandoId() === null ? 'Nuevo registro' : 'Editar registro' }}</h3>
-          <div class="formulario">
+          @if (vistaPrevia(); as plantilla) {
+            <div class="pestanas-form" role="tablist" aria-label="Formulario">
+              <button type="button" role="tab" [attr.aria-selected]="!viendoPrevia()" (click)="viendoPrevia.set(false)">
+                Datos
+              </button>
+              <button type="button" role="tab" [attr.aria-selected]="viendoPrevia()" (click)="viendoPrevia.set(true)">
+                Vista previa
+              </button>
+            </div>
+            @if (viendoPrevia()) {
+              <div role="tabpanel">
+                <ng-container
+                  [ngTemplateOutlet]="plantilla"
+                  [ngTemplateOutletContext]="{ $implicit: borrador(), fotos: vistas() }"
+                />
+              </div>
+            }
+          }
+          <!-- Se oculta en lugar de quitarse para que el archivo elegido no se pierda -->
+          <div class="formulario" [hidden]="viendoPrevia()" [attr.role]="vistaPrevia() ? 'tabpanel' : null">
             @for (campo of camposEditables(); track campo.clave) {
               <label class="campo">
                 <span>{{ campo.etiqueta }}</span>
@@ -115,6 +204,9 @@ export interface AccionFila {
                       (change)="ponerArchivo(campo.clave, $event)"
                       [name]="campo.clave"
                     />
+                    @if (vistas()[campo.clave]; as src) {
+                      <img class="vista-previa" [src]="src" alt="Vista previa de la imagen elegida" />
+                    }
                   }
                   @case ('booleano') {
                     <input
@@ -134,6 +226,9 @@ export interface AccionFila {
                       [name]="campo.clave"
                       [required]="campo.requerido ?? false"
                     />
+                    @if (campo.tipo === 'imagen' && valor(campo.clave); as src) {
+                      <img class="vista-previa" [src]="$any(src)" alt="Vista previa de la imagen" />
+                    }
                   }
                 }
               </label>
@@ -149,67 +244,136 @@ export interface AccionFila {
       }
 
       @if (cargando()) {
-        <p class="suave">Cargando…</p>
+        <div class="tabla-envoltura" aria-busy="true">
+          <span class="oculto">Cargando…</span>
+          @for (n of [1, 2, 3]; track n) {
+            <div class="esqueleto"></div>
+          }
+        </div>
       } @else if (filas().length === 0) {
-        <p class="vacio">{{ sinDatos() }}</p>
+        <div class="vacio pila">
+          <p style="margin:0">{{ sinDatos() }}</p>
+          @if (!soloLectura() && !formAbierto()) {
+            <div><button type="button" class="contorno" (click)="nuevoRegistro()">Agregar el primero</button></div>
+          }
+        </div>
       } @else {
-        <div class="tabla-envoltura">
-          <table>
-            <thead>
-              <tr>
-                @for (campo of camposVisibles(); track campo.clave) {
-                  <th>{{ campo.etiqueta }}</th>
-                }
-                @if (hayAcciones()) {
-                  <th>Acciones</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (fila of filas(); track $index) {
+        <div class="barra-tabla">
+          <input
+            type="search"
+            class="buscar-tabla"
+            placeholder="Buscar…"
+            aria-label="Buscar en {{ titulo() || 'la tabla' }}"
+            [value]="consulta()"
+            (input)="consulta.set($any($event.target).value)"
+          />
+          @if (estados().length > 1) {
+            <div class="fila filtros-estado" role="group" aria-label="Filtrar por estado">
+              <button
+                type="button"
+                class="contorno"
+                [class.activo]="estado() === null"
+                [attr.aria-pressed]="estado() === null"
+                (click)="estado.set(null)"
+              >
+                Todos <span class="cuenta">{{ filas().length }}</span>
+              </button>
+              @for (e of estados(); track e.valor) {
+                <button
+                  type="button"
+                  class="contorno"
+                  [class.activo]="estado() === e.valor"
+                  [attr.aria-pressed]="estado() === e.valor"
+                  (click)="estado.set(e.valor)"
+                >
+                  {{ legible(e.valor) }} <span class="cuenta">{{ e.cantidad }}</span>
+                </button>
+              }
+            </div>
+          }
+          <span class="suave pequeno total-tabla">
+            {{ filasFiltradas().length }} de {{ filas().length }}
+            {{ filas().length === 1 ? 'registro' : 'registros' }}
+          </span>
+        </div>
+
+        @if (filasFiltradas().length === 0) {
+          <p class="vacio">Ningún registro coincide con la búsqueda.</p>
+        } @else {
+          <div class="tabla-envoltura">
+            <table>
+              <thead>
                 <tr>
                   @for (campo of camposVisibles(); track campo.clave) {
-                    <td>
-                      @if (campo.esEstado) {
-                        <app-estado [valor]="texto(fila, campo)" />
-                      } @else {
-                        {{ texto(fila, campo) }}
-                      }
-                    </td>
+                    <th scope="col" [class.num]="campo.tipo === 'decimal' || campo.tipo === 'numero'">
+                      {{ campo.etiqueta }}
+                    </th>
                   }
                   @if (hayAcciones()) {
-                    <td>
-                      @if (enlace(); as destino) {
-                        <a class="plano-enlace" [routerLink]="destino(fila)">{{ textoEnlace() }}</a>
-                      }
-                      @for (accion of accionesVisibles(fila); track $index) {
-                        <button
-                          type="button"
-                          class="plano"
-                          [class.peligro]="accion.peligro"
-                          [disabled]="ejecutando()"
-                          (click)="ejecutarAccion(accion, fila)"
-                        >
-                          {{ textoAccion(accion, fila) }}
-                        </button>
-                      }
-                      @if (!soloLectura()) {
-                        <button type="button" class="plano" (click)="editar(fila)">Editar</button>
-                      }
-                      @if (borrar()) {
-                        <button type="button" class="plano peligro" (click)="eliminar(fila)">
-                          Eliminar
-                        </button>
-                      }
-                    </td>
+                    <th scope="col" class="acciones-celda"><span class="oculto">Acciones</span></th>
                   }
                 </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                @for (fila of filasFiltradas(); track $index) {
+                  <tr>
+                    @for (campo of camposVisibles(); track campo.clave) {
+                      <td [class.num]="campo.tipo === 'decimal' || campo.tipo === 'numero'">
+                        @if (campo.esEstado) {
+                          <app-estado [valor]="texto(fila, campo)" />
+                        } @else if (campo.tipo === 'imagen' && fila[campo.clave]) {
+                          <img class="miniatura" [src]="$any(fila[campo.clave])" alt="" loading="lazy" />
+                        } @else {
+                          {{ texto(fila, campo) }}
+                        }
+                      </td>
+                    }
+                    @if (hayAcciones()) {
+                      <td class="acciones-celda">
+                        @if (enlace(); as destino) {
+                          <a class="plano-enlace" [routerLink]="destino(fila)">{{ textoEnlace() }}</a>
+                        }
+                        @for (accion of accionesVisibles(fila); track $index) {
+                          <button
+                            type="button"
+                            class="plano"
+                            [class.peligro]="accion.peligro"
+                            [disabled]="ejecutando()"
+                            (click)="ejecutarAccion(accion, fila)"
+                          >
+                            {{ textoAccion(accion, fila) }}
+                          </button>
+                        }
+                        @if (!soloLectura()) {
+                          <button type="button" class="plano" (click)="editar(fila)">Editar</button>
+                        }
+                        @if (borrar()) {
+                          <button type="button" class="plano peligro" (click)="eliminar(fila)">
+                            Eliminar
+                          </button>
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       }
     </section>
+
+    <dialog #dialogo class="dialogo" aria-labelledby="pregunta-tabla" (close)="pendiente.set(null)">
+      @if (pendiente(); as p) {
+        <p id="pregunta-tabla">{{ p.pregunta }}</p>
+        <div class="fila" style="justify-content:flex-end">
+          <button type="button" class="plano" (click)="dialogo.close()">Volver</button>
+          <button type="button" [class.peligro]="p.peligro" [class.primario]="!p.peligro" (click)="confirmar()">
+            {{ p.boton }}
+          </button>
+        </div>
+      }
+    </dialog>
   `,
   styles: `
     .plano-enlace {
@@ -222,9 +386,88 @@ export interface AccionFila {
       text-decoration: none;
       background: var(--superficie-2);
     }
+    .barra-tabla {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .buscar-tabla {
+      max-width: 260px;
+    }
+    .filtros-estado {
+      gap: 6px;
+    }
+    .filtros-estado button {
+      padding: 4px 10px;
+      font-size: 0.85rem;
+    }
+    .cuenta {
+      opacity: 0.75;
+      margin-left: 2px;
+    }
+    .total-tabla {
+      margin-left: auto;
+    }
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .acciones-celda {
+      text-align: right;
+    }
+    tbody tr:hover td {
+      background: var(--superficie-2);
+    }
+    .miniatura {
+      width: 48px;
+      height: 36px;
+      object-fit: cover;
+      border-radius: var(--r-s);
+      display: block;
+    }
+    .vista-previa {
+      margin-top: 6px;
+      max-width: 200px;
+      max-height: 130px;
+      object-fit: cover;
+      border-radius: var(--r-m);
+      border: 1px solid var(--borde);
+    }
+    .esqueleto {
+      height: 40px;
+      margin: 8px 12px;
+      border-radius: var(--r-s);
+      background: linear-gradient(90deg, var(--superficie-2), var(--borde), var(--superficie-2));
+      background-size: 200% 100%;
+      animation: brillo 1.2s ease-in-out infinite;
+    }
+    @keyframes brillo {
+      to {
+        background-position: -200% 0;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .esqueleto {
+        animation: none;
+      }
+    }
+    .dialogo {
+      border: 1px solid var(--borde);
+      border-radius: var(--r-l);
+      background: var(--superficie);
+      color: var(--texto);
+      box-shadow: var(--sombra);
+      padding: 20px;
+      max-width: 420px;
+      width: calc(100% - 32px);
+    }
+    .dialogo::backdrop {
+      background: rgb(0 0 0 / 0.45);
+    }
   `,
 })
-export class TablaCrud {
+export class TablaCrud implements OnDestroy {
   readonly titulo = input('');
   readonly descripcion = input('');
   readonly sinDatos = input('Todavía no hay registros.');
@@ -240,6 +483,14 @@ export class TablaCrud {
   readonly enlace = input<((fila: Registro) => (string | number)[]) | null>(null);
   readonly textoEnlace = input('Abrir');
   readonly acciones = input<AccionFila[]>([]);
+  /**
+   * Plantilla de la pestaña «Vista previa» del formulario. Recibe el borrador
+   * como `$implicit` y las URLs de las imágenes elegidas en `fotos`.
+   */
+  readonly vistaPrevia = input<TemplateRef<{ $implicit: Registro; fotos: Record<string, string> }> | null>(null);
+
+  protected readonly legible = legible;
+  private readonly dialogo = viewChild.required<ElementRef<HTMLDialogElement>>('dialogo');
 
   protected readonly filas = signal<Registro[]>([]);
   protected readonly cargando = signal(false);
@@ -249,8 +500,13 @@ export class TablaCrud {
   protected readonly editandoId = signal<Id | null>(null);
   protected readonly borrador = signal<Registro>({});
   protected readonly formAbierto = signal(false);
-
   protected readonly ejecutando = signal(false);
+  protected readonly consulta = signal('');
+  protected readonly estado = signal<string | null>(null);
+  protected readonly pendiente = signal<Pendiente | null>(null);
+  protected readonly viendoPrevia = signal(false);
+  /** URLs temporales de las imágenes elegidas en los campos de archivo. */
+  protected readonly vistas = signal<Record<string, string>>({});
 
   protected readonly soloLectura = computed(() => this.guardar() === null);
   protected readonly hayAcciones = computed(
@@ -264,6 +520,34 @@ export class TablaCrud {
   protected readonly camposEditables = computed(() =>
     this.campos().filter((c) => !c.soloLectura && !(c.soloAlCrear && this.editandoId() !== null)),
   );
+  private readonly campoEstado = computed(() => this.campos().find((c) => c.esEstado) ?? null);
+
+  /** Estados presentes en los datos, en el orden en que aparecen, con su cantidad. */
+  protected readonly estados = computed(() => {
+    const campo = this.campoEstado();
+    const cuenta = new Map<string, number>();
+    if (campo) {
+      for (const fila of this.filas()) {
+        const valor = String(fila[campo.clave] ?? '');
+        cuenta.set(valor, (cuenta.get(valor) ?? 0) + 1);
+      }
+    }
+    return [...cuenta].map(([valor, cantidad]) => ({ valor, cantidad }));
+  });
+
+  protected readonly filasFiltradas = computed(() => {
+    const campo = this.campoEstado();
+    const estado = this.estado();
+    const consulta = normalizar(this.consulta().trim());
+    return this.filas().filter(
+      (fila) =>
+        (estado === null || !campo || String(fila[campo.clave] ?? '') === estado) &&
+        (!consulta ||
+          this.camposVisibles().some((c) =>
+            normalizar(this.texto(fila, c) + ' ' + legible(String(fila[c.clave] ?? ''))).includes(consulta),
+          )),
+    );
+  });
 
   constructor() {
     effect(() => {
@@ -272,12 +556,20 @@ export class TablaCrud {
     });
   }
 
+  ngOnDestroy(): void {
+    this.soltarVistas();
+  }
+
   private recargar(cargador = this.cargar()): void {
     this.cargando.set(true);
     this.error.set('');
     cargador().subscribe({
       next: (datos) => {
         this.filas.set(datos);
+        // Si el estado filtrado ya no existe (p. ej. se cambió el último), se vuelve a «Todos»
+        if (this.estado() !== null && !this.estados().some((e) => e.valor === this.estado())) {
+          this.estado.set(null);
+        }
         this.cargando.set(false);
       },
       error: (e: Error) => {
@@ -297,6 +589,8 @@ export class TablaCrud {
         return 'date';
       case 'fechaHora':
         return 'datetime-local';
+      case 'imagen':
+        return 'url';
       default:
         return 'text';
     }
@@ -311,32 +605,24 @@ export class TablaCrud {
   }
 
   protected ponerArchivo(clave: string, evento: Event): void {
-    this.poner(clave, (evento.target as HTMLInputElement).files?.[0] ?? null);
+    const archivo = (evento.target as HTMLInputElement).files?.[0] ?? null;
+    this.poner(clave, archivo);
+    const anterior = this.vistas()[clave];
+    if (anterior) {
+      URL.revokeObjectURL(anterior);
+    }
+    this.vistas.update(({ [clave]: _, ...resto }) =>
+      archivo ? { ...resto, [clave]: URL.createObjectURL(archivo) } : resto,
+    );
+  }
+
+  private soltarVistas(): void {
+    Object.values(this.vistas()).forEach((url) => URL.revokeObjectURL(url));
+    this.vistas.set({});
   }
 
   protected texto(fila: Registro, campo: Campo): string {
-    const valor = fila[campo.clave];
-    if (valor === null || valor === undefined || valor === '') {
-      return '—';
-    }
-    if (typeof valor === 'boolean') {
-      return valor ? 'Sí' : 'No';
-    }
-    if (campo.tipo === 'select') {
-      const opcion = (campo.opciones ?? []).find((o) => o.valor === valor);
-      return opcion ? opcion.texto : String(valor);
-    }
-    if (campo.esEstado) {
-      return String(valor);
-    }
-    if (campo.tipo === 'decimal') {
-      return Number(valor).toLocaleString('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        maximumFractionDigits: 0,
-      });
-    }
-    return typeof valor === 'string' && /^[A-Z_]{3,}$/.test(valor) ? legible(valor) : String(valor);
+    return textoCelda(fila[campo.clave], campo);
   }
 
   protected accionesVisibles(fila: Registro): AccionFila[] {
@@ -347,11 +633,31 @@ export class TablaCrud {
     return typeof accion.texto === 'function' ? accion.texto(fila) : accion.texto;
   }
 
+  /** Abre el diálogo de confirmación; `hacer` solo corre si la persona confirma. */
+  private preguntar(pregunta: string, boton: string, peligro: boolean, hacer: () => void): void {
+    this.pendiente.set({ pregunta, boton, peligro, hacer });
+    this.dialogo().nativeElement.showModal();
+  }
+
+  protected confirmar(): void {
+    const p = this.pendiente();
+    this.dialogo().nativeElement.close();
+    p?.hacer();
+  }
+
   protected ejecutarAccion(accion: AccionFila, fila: Registro): void {
-    if (this.ejecutando() || (accion.confirmar && !confirm(accion.confirmar))) {
+    if (this.ejecutando()) {
       return;
     }
+    if (accion.confirmar) {
+      const boton = this.textoAccion(accion, fila);
+      this.preguntar(accion.confirmar, boton, accion.peligro ?? false, () => this.correrAccion(accion, fila));
+    } else {
+      this.correrAccion(accion, fila);
+    }
+  }
 
+  private correrAccion(accion: AccionFila, fila: Registro): void {
     this.ejecutando.set(true);
     this.error.set('');
     accion.ejecutar(fila).subscribe({
@@ -383,8 +689,10 @@ export class TablaCrud {
 
   protected cancelar(): void {
     this.formAbierto.set(false);
+    this.viendoPrevia.set(false);
     this.borrador.set({});
     this.editandoId.set(null);
+    this.soltarVistas();
   }
 
   protected enviar(): void {
@@ -421,17 +729,19 @@ export class TablaCrud {
   protected eliminar(fila: Registro): void {
     const borrar = this.borrar();
     const id = fila[this.claveId()] as Id | undefined;
-    if (!borrar || id === undefined || !confirm('¿Eliminar este registro?')) {
+    if (!borrar || id === undefined) {
       return;
     }
 
-    this.error.set('');
-    borrar(id).subscribe({
-      next: (respuesta) => {
-        this.mensaje.set(respuesta);
-        this.recargar();
-      },
-      error: (e: Error) => this.error.set(e.message),
+    this.preguntar('¿Eliminar este registro? Esta acción no se puede deshacer.', 'Eliminar', true, () => {
+      this.error.set('');
+      borrar(id).subscribe({
+        next: (respuesta) => {
+          this.mensaje.set(respuesta);
+          this.recargar();
+        },
+        error: (e: Error) => this.error.set(e.message),
+      });
     });
   }
 }

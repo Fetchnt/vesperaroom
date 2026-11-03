@@ -41,7 +41,7 @@ export class ResenasAdmin {
       requerido: true,
     },
     { clave: 'comentario', etiqueta: 'Comentario', tipo: 'area' },
-    { clave: 'fecha', etiqueta: 'Fecha', soloLectura: true },
+    { clave: 'fecha', etiqueta: 'Fecha', tipo: 'fechaHora', soloLectura: true },
   ];
 
   protected readonly cargar = () => this.api.crud.getAll();

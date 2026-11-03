@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
-import { ReservaApi } from '../../core/api/entidades';
+import { Component, computed, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { HabitacionApi, MotelApi, ReservaApi, UsuarioApi } from '../../core/api/entidades';
 import type { EstadoReserva } from '../../core/api/models';
+import { lista } from '../../shared/recursos';
 import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 
 /**
@@ -34,7 +36,7 @@ const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
       titulo="Reservas"
       claveId="idReserva"
       sinDatos="No hay reservas registradas."
-      [campos]="campos"
+      [campos]="campos()"
       [cargar]="cargar"
       [borrar]="borrar"
       [acciones]="acciones"
@@ -44,17 +46,41 @@ const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
 export class ReservasAdmin {
   private readonly api = inject(ReservaApi);
 
-  protected readonly campos: Campo[] = [
-    { clave: 'codigoReserva', etiqueta: 'Código' },
-    { clave: 'idUsuario', etiqueta: 'Cliente' },
-    { clave: 'idHabitacion', etiqueta: 'Habitación' },
-    { clave: 'fechaHoraInicio', etiqueta: 'Entrada' },
-    { clave: 'fechaHoraFin', etiqueta: 'Salida' },
-    { clave: 'cantidadPersonas', etiqueta: 'Personas' },
-    { clave: 'total', etiqueta: 'Total', tipo: 'decimal' },
-    { clave: 'montoReembolso', etiqueta: 'Reembolso', tipo: 'decimal' },
-    { clave: 'estado', etiqueta: 'Estado', esEstado: true },
-  ];
+  private readonly usuarioApi = inject(UsuarioApi);
+  private readonly habitacionApi = inject(HabitacionApi);
+  private readonly motelApi = inject(MotelApi);
+  private readonly usuarios = rxResource({ stream: () => this.usuarioApi.crud.getAll(), defaultValue: [] });
+  private readonly habitaciones = rxResource({ stream: () => this.habitacionApi.crud.getAll(), defaultValue: [] });
+  private readonly moteles = rxResource({ stream: () => this.motelApi.todos(), defaultValue: [] });
+
+  /** Cliente y habitación con nombre; mientras llegan las listas se ve el id. */
+  protected readonly campos = computed<Campo[]>(() => {
+    const motel = new Map(lista(this.moteles).map((m) => [m.idMotel, m.nombre]));
+    return [
+      { clave: 'codigoReserva', etiqueta: 'Código' },
+      {
+        clave: 'idUsuario',
+        etiqueta: 'Cliente',
+        tipo: 'select',
+        opciones: lista(this.usuarios).map((u) => ({ valor: u.idUsuario!, texto: `${u.nombre} ${u.apellido}` })),
+      },
+      {
+        clave: 'idHabitacion',
+        etiqueta: 'Habitación',
+        tipo: 'select',
+        opciones: lista(this.habitaciones).map((h) => ({
+          valor: h.idHabitacion!,
+          texto: `${h.numero} · ${motel.get(h.idMotel) ?? 'Motel ' + h.idMotel}`,
+        })),
+      },
+      { clave: 'fechaHoraInicio', etiqueta: 'Entrada', tipo: 'fechaHora' },
+      { clave: 'fechaHoraFin', etiqueta: 'Salida', tipo: 'fechaHora' },
+      { clave: 'cantidadPersonas', etiqueta: 'Personas', tipo: 'numero' },
+      { clave: 'total', etiqueta: 'Total', tipo: 'decimal' },
+      { clave: 'montoReembolso', etiqueta: 'Reembolso', tipo: 'decimal' },
+      { clave: 'estado', etiqueta: 'Estado', esEstado: true },
+    ];
+  });
 
   protected readonly cargar = () => this.api.crud.getAll();
   protected readonly borrar = (id: number | string) => this.api.crud.eliminar(id);
