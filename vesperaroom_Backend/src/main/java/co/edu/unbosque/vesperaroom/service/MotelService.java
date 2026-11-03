@@ -102,7 +102,8 @@ public class MotelService implements CRUDOperation<MotelDTO> {
 			if (data.getEstado() == null) {
 				entity.setEstado(Estado.ACTIVO);
 			}
-			motelRepository.insertar(entity);
+			// El controlador usa el id para responder la cabecera Location
+			data.setIdMotel(motelRepository.insertar(entity));
 			return 0;
 
 		} catch (TextoInvalidoException e) {

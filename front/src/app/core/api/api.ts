@@ -97,6 +97,21 @@ export class Api {
       .pipe(catchError(fallar));
   }
 
+  /** POST que además devuelve el id del registro nuevo, tomado de la cabecera Location. */
+  crearConId(ruta: string, cuerpo: unknown): Observable<{ mensaje: string; id: Id | null }> {
+    return this.http.post(this.url(ruta), cuerpo, { responseType: 'text', observe: 'response' }).pipe(
+      map((r) => ({ mensaje: r.body ?? '', id: r.headers.get('Location')?.split('/').pop() || null })),
+      catchError(fallar),
+    );
+  }
+
+  /** POST multipart con un archivo en el campo `archivo`, como la imagen de una foto. */
+  subir(ruta: string, archivo: File, params?: Params): Observable<string> {
+    const datos = new FormData();
+    datos.append('archivo', archivo);
+    return this.crear(ruta, datos, params);
+  }
+
   /** PUT con cuerpo JSON opcional. */
   actualizar(ruta: string, cuerpo: unknown, params?: Params): Observable<string> {
     return this.http

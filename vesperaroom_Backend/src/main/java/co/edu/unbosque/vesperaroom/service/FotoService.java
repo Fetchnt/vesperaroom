@@ -8,11 +8,13 @@ import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import co.edu.unbosque.vesperaroom.dto.FotoDTO;
 import co.edu.unbosque.vesperaroom.entity.Foto;
 import co.edu.unbosque.vesperaroom.exception.AccesoDatosException;
 import co.edu.unbosque.vesperaroom.exception.FotoDuenoException;
+import co.edu.unbosque.vesperaroom.exception.ImagenException;
 import co.edu.unbosque.vesperaroom.exception.LanzadorExcepciones;
 import co.edu.unbosque.vesperaroom.exception.ReferenciaNoEncontradaException;
 import co.edu.unbosque.vesperaroom.exception.RegistroDuplicadoException;
@@ -43,6 +45,7 @@ import co.edu.unbosque.vesperaroom.util.Normalizador;
  * <li>6: el dueño ya tiene otra foto en esa posición</li>
  * <li>7: foto no encontrada (solo al actualizar)</li>
  * <li>8: error inesperado</li>
+ * <li>9: el archivo no es una imagen válida (solo al subir)</li>
  * </ul>
  * <p>
  * Códigos de {@link #deleteById(Long)}: 0 éxito, 1 no encontrada, 3 error
@@ -60,13 +63,15 @@ public class FotoService implements CRUDOperation<FotoDTO> {
 	private final MotelRepository motelRepository;
 	private final HabitacionRepository habitacionRepository;
 	private final ModelMapper mapper;
+	private final AlmacenImagenService almacen;
 
 	public FotoService(FotoRepository fotoRepository, MotelRepository motelRepository,
-			HabitacionRepository habitacionRepository, ModelMapper mapper) {
+			HabitacionRepository habitacionRepository, ModelMapper mapper, AlmacenImagenService almacen) {
 		this.fotoRepository = fotoRepository;
 		this.motelRepository = motelRepository;
 		this.habitacionRepository = habitacionRepository;
 		this.mapper = mapper;
+		this.almacen = almacen;
 	}
 
 	/**
@@ -149,7 +154,67 @@ public class FotoService implements CRUDOperation<FotoDTO> {
 	}
 
 	/**
-	 * Elimina una foto según su ID.
+	 * Sube una imagen desde el equipo del usuario: la guarda en la carpeta de
+	 * fotos y registra su dirección pública en la tabla {@code foto}. Si no se
+	 * indica la posición, la foto queda de última.
+	 *
+	 * @param archivo      imagen JPG, PNG o WEBP
+	 * @param idMotel      motel dueño (o nulo)
+	 * @param idHabitacion habitación dueña (o nula)
+	 * @param orden        posición de la foto (o nula)
+	 * @param urlBase      dirección del servidor, para armar la URI pública
+	 * @return código de resultado según la tabla de la clase (0 a 6, 8 o 9)
+	 */
+	public int subir(MultipartFile archivo, Long idMotel, Long idHabitacion, Integer orden, String urlBase) {
+		String uri = null;
+		try {
+			LanzadorExcepciones.verificarImagen(archivo == null ? null : archivo.getContentType(),
+					archivo == null ? 0 : archivo.getSize());
+			LanzadorExcepciones.verificarDuenoFoto(idMotel, idHabitacion);
+
+			FotoDTO data = new FotoDTO();
+			data.setIdMotel(idMotel);
+			data.setIdHabitacion(idHabitacion);
+			verificarDueno(data);
+			data.setOrden(orden != null ? orden : fotoRepository.siguienteOrden(idMotel, idHabitacion));
+			LanzadorExcepciones.verificarRango(data.getOrden(), 1, 50, "orden");
+			verificarOrdenLibre(idMotel, idHabitacion, data.getOrden(), 0L);
+
+			uri = urlBase + AlmacenImagenService.RUTA_PUBLICA + almacen.guardar(archivo);
+			data.setUri(uri);
+			LanzadorExcepciones.verificarUri(uri);
+
+			Foto entity = mapper.map(data, Foto.class);
+			entity.setIdFoto(null);
+			fotoRepository.insertar(entity);
+			return 0;
+
+		} catch (ImagenException e) {
+			return 9;
+		} catch (FotoDuenoException e) {
+			return 1;
+		} catch (UriException e) {
+			almacen.eliminar(uri);
+			return 2;
+		} catch (ValorFueraDeRangoException e) {
+			return 3;
+		} catch (ReferenciaNoEncontradaException e) {
+			return ENTIDAD_MOTEL.equals(e.getEntidad()) ? 4 : 5;
+		} catch (RegistroDuplicadoException e) {
+			return 6;
+		} catch (SQLIntegrityConstraintViolationException e) {
+			almacen.eliminar(uri);
+			return CodigoMySQL.esLlaveDuplicada(e) ? 6 : 8;
+		} catch (Exception e) {
+			e.printStackTrace();
+			almacen.eliminar(uri);
+			return 8;
+		}
+	}
+
+	/**
+	 * Elimina una foto según su ID. Si la imagen se había subido al servidor,
+	 * también se borra su archivo.
 	 *
 	 * @param id identificador de la foto
 	 * @return 0 si se eliminó, 1 si no existe, 3 si ocurre un error inesperado
@@ -157,8 +222,10 @@ public class FotoService implements CRUDOperation<FotoDTO> {
 	@Override
 	public int deleteById(Long id) {
 		try {
-			LanzadorExcepciones.verificarExistencia(fotoRepository.existsById(id), ENTIDAD, id);
+			Optional<Foto> found = fotoRepository.findById(id);
+			LanzadorExcepciones.verificarExistencia(found.isPresent(), ENTIDAD, id);
 			fotoRepository.eliminar(id);
+			almacen.eliminar(found.get().getUri());
 			return 0;
 		} catch (RegistroNoEncontradoException e) {
 			return 1;

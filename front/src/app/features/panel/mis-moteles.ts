@@ -51,17 +51,17 @@ export class MisMoteles {
     { clave: 'calle', etiqueta: 'Calle', requerido: true },
     { clave: 'carrera', etiqueta: 'Carrera', requerido: true },
     { clave: 'descripcion', etiqueta: 'Descripción', tipo: 'area', oculto: true },
-    { clave: 'latitud', etiqueta: 'Latitud', tipo: 'decimal', oculto: true },
-    { clave: 'longitud', etiqueta: 'Longitud', tipo: 'decimal', oculto: true },
+    { clave: 'foto', etiqueta: 'Foto del motel', tipo: 'archivo', oculto: true },
     { clave: 'estado', etiqueta: 'Estado', esEstado: true, soloLectura: true },
   ]);
 
   protected readonly cargar = () => this.motelApi.mios();
 
-  protected readonly guardar = (id: number | string | null, dto: Registro) =>
-    id === null
-      ? this.motelApi.crud.crear(dto as unknown as Motel)
-      : this.motelApi.crud.actualizar(id, dto as unknown as Motel);
+  /** La foto elegida no es parte del motel: se sube aparte a la tabla foto. */
+  protected readonly guardar = (id: number | string | null, dto: Registro) => {
+    const { foto, ...motel } = dto;
+    return this.motelApi.guardar(id, motel as unknown as Motel, (foto as File | null) ?? null);
+  };
 
   protected readonly borrar = (id: number | string) => this.motelApi.crud.eliminar(id);
 

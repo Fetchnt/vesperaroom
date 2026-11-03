@@ -523,8 +523,9 @@ export class MotelGestion {
   // ---------- Fotos ----------
 
   protected readonly camposFoto = computed<Campo[]>(() => [
-    { clave: 'uri', etiqueta: 'URL de la imagen', requerido: true },
-    { clave: 'orden', etiqueta: 'Orden', tipo: 'numero' },
+    { clave: 'archivo', etiqueta: 'Imagen', tipo: 'archivo', requerido: true, oculto: true, soloAlCrear: true },
+    { clave: 'uri', etiqueta: 'Dirección', soloLectura: true },
+    { clave: 'orden', etiqueta: 'Orden (vacío: al final)', tipo: 'numero' },
     {
       clave: 'idHabitacion',
       etiqueta: 'Habitación (opcional)',
@@ -542,19 +543,20 @@ export class MotelGestion {
 
   /**
    * La tabla `foto` exige que la imagen sea del motel o de una habitación, no de
-   * ambos, así que se envía solo la referencia elegida.
+   * ambos, así que se envía solo la referencia elegida. Una foto nueva se sube
+   * como archivo; al editarla solo cambia su posición.
    */
   protected readonly guardarFoto = (idFila: number | string | null, dto: Registro) => {
     const idHabitacion = (dto['idHabitacion'] as number | null) ?? null;
-    const foto = {
-      ...dto,
-      idHabitacion,
-      idMotel: idHabitacion === null ? this.idMotel() : null,
-    } as unknown as Foto;
+    const dueno = idHabitacion === null ? { idMotel: this.idMotel() } : { idHabitacion };
 
-    return idFila === null
-      ? this.fotoApi.crud.crear(foto)
-      : this.fotoApi.crud.actualizar(idFila, foto);
+    if (idFila === null) {
+      const orden = typeof dto['orden'] === 'number' ? dto['orden'] : undefined;
+      return this.fotoApi.subir(dto['archivo'] as File, { ...dueno, orden });
+    }
+
+    const foto = { ...dto, idHabitacion, idMotel: dueno.idMotel ?? null } as unknown as Foto;
+    return this.fotoApi.crud.actualizar(idFila, foto);
   };
 
   protected readonly borrarFoto = (idFila: number | string) => this.fotoApi.crud.eliminar(idFila);

@@ -36,3 +36,6 @@ build/
 
 ### Secretos locales ###
 .env.properties
+
+### Fotos subidas ###
+uploads/

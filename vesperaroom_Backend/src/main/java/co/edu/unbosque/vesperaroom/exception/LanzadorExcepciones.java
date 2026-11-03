@@ -3,6 +3,7 @@ package co.edu.unbosque.vesperaroom.exception;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import co.edu.unbosque.vesperaroom.entity.Usuario.Estado;
 import co.edu.unbosque.vesperaroom.entity.Usuario.Rol;
@@ -22,6 +23,8 @@ public class LanzadorExcepciones {
 	private static final int TAMANO_MINIMO_CONTRASENA = 8;
 	private static final BigDecimal LATITUD_MAXIMA = BigDecimal.valueOf(90);
 	private static final BigDecimal LONGITUD_MAXIMA = BigDecimal.valueOf(180);
+	private static final Set<String> TIPOS_IMAGEN = Set.of("image/jpeg", "image/png", "image/webp");
+	private static final long TAMANO_MAXIMO_IMAGEN = 5L * 1024 * 1024;
 
 	private LanzadorExcepciones() {
 	}
@@ -369,6 +372,20 @@ public class LanzadorExcepciones {
 	public static void verificarAntesDelInicio(LocalDateTime inicio, LocalDateTime ahora) throws FechaException {
 		if (!inicio.isAfter(ahora)) {
 			throw new FechaException("La reserva ya comenzó.");
+		}
+	}
+
+	/**
+	 * Verifica que un archivo subido sea una imagen JPG, PNG o WEBP de máximo 5 MB.
+	 *
+	 * @param tipo   tipo MIME declarado del archivo
+	 * @param tamano tamaño del archivo en bytes
+	 * @throws ImagenException si el tipo no es de imagen admitido, está vacío o
+	 *                         supera el tamaño máximo
+	 */
+	public static void verificarImagen(String tipo, long tamano) throws ImagenException {
+		if (tipo == null || !TIPOS_IMAGEN.contains(tipo) || tamano <= 0 || tamano > TAMANO_MAXIMO_IMAGEN) {
+			throw new ImagenException();
 		}
 	}
 

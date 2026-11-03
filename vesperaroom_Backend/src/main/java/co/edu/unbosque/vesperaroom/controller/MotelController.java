@@ -1,5 +1,6 @@
 package co.edu.unbosque.vesperaroom.controller;
 
+import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -69,7 +70,14 @@ public class MotelController {
 		}
 
 		int status = motelService.create(nuevo);
-		return RespuestaMotel.guardar(status, "Motel creado exitosamente", HttpStatus.CREATED);
+		ResponseEntity<String> respuesta = RespuestaMotel.guardar(status, "Motel creado exitosamente",
+				HttpStatus.CREATED);
+		if (status != 0) {
+			return respuesta;
+		}
+		// El id del motel nuevo va en Location para poder subirle la foto enseguida
+		return ResponseEntity.status(respuesta.getStatusCode())
+				.location(URI.create("/motel/getbyid/" + nuevo.getIdMotel())).body(respuesta.getBody());
 	}
 
 	/**

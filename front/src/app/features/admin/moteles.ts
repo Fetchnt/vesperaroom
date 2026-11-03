@@ -66,16 +66,16 @@ export class MotelesAdmin {
       })),
     },
     { clave: 'descripcion', etiqueta: 'Descripción', tipo: 'area', oculto: true },
-    { clave: 'latitud', etiqueta: 'Latitud', tipo: 'decimal', oculto: true },
-    { clave: 'longitud', etiqueta: 'Longitud', tipo: 'decimal', oculto: true },
+    { clave: 'foto', etiqueta: 'Foto del motel', tipo: 'archivo', oculto: true },
     { clave: 'estado', etiqueta: 'Estado', esEstado: true, soloLectura: true },
   ]);
 
   protected readonly cargar = () => this.api.todos();
-  protected readonly guardar = (id: number | string | null, dto: Registro) =>
-    id === null
-      ? this.api.crud.crear(dto as unknown as Motel)
-      : this.api.crud.actualizar(id, dto as unknown as Motel);
+  /** La foto elegida no es parte del motel: se sube aparte a la tabla foto. */
+  protected readonly guardar = (id: number | string | null, dto: Registro) => {
+    const { foto, ...motel } = dto;
+    return this.api.guardar(id, motel as unknown as Motel, (foto as File | null) ?? null);
+  };
   protected readonly borrar = (id: number | string) => this.api.crud.eliminar(id);
   /** Política, tipos, habitaciones, tarifas, servicios y fotos de cualquier motel. */
   protected readonly gestionar = (fila: Registro) => ['/admin/moteles', fila['idMotel'] as number];

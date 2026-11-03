@@ -4,7 +4,7 @@ import type { Id } from '../core/api/api';
 import { legible } from './etiquetas';
 
 export type TipoCampo =
-  'texto' | 'numero' | 'decimal' | 'fecha' | 'fechaHora' | 'area' | 'select' | 'booleano';
+  'texto' | 'numero' | 'decimal' | 'fecha' | 'fechaHora' | 'area' | 'select' | 'booleano' | 'archivo';
 
 export interface Opcion {
   valor: string | number;
@@ -23,6 +23,8 @@ export interface Campo {
   esEstado?: boolean;
   /** No aparece en la tabla, solo en el formulario. */
   oculto?: boolean;
+  /** Solo se pide al crear el registro, no al editarlo. */
+  soloAlCrear?: boolean;
 }
 
 /** Un registro cualquiera del backend. */
@@ -105,6 +107,14 @@ export interface AccionFila {
                       [name]="campo.clave"
                       [required]="campo.requerido ?? false"
                     ></textarea>
+                  }
+                  @case ('archivo') {
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      (change)="ponerArchivo(campo.clave, $event)"
+                      [name]="campo.clave"
+                    />
                   }
                   @case ('booleano') {
                     <input
@@ -251,7 +261,9 @@ export class TablaCrud {
       this.acciones().length > 0,
   );
   protected readonly camposVisibles = computed(() => this.campos().filter((c) => !c.oculto));
-  protected readonly camposEditables = computed(() => this.campos().filter((c) => !c.soloLectura));
+  protected readonly camposEditables = computed(() =>
+    this.campos().filter((c) => !c.soloLectura && !(c.soloAlCrear && this.editandoId() !== null)),
+  );
 
   constructor() {
     effect(() => {
@@ -296,6 +308,10 @@ export class TablaCrud {
 
   protected poner(clave: string, valor: unknown): void {
     this.borrador.update((actual) => ({ ...actual, [clave]: valor }));
+  }
+
+  protected ponerArchivo(clave: string, evento: Event): void {
+    this.poner(clave, (evento.target as HTMLInputElement).files?.[0] ?? null);
   }
 
   protected texto(fila: Registro, campo: Campo): string {
@@ -374,6 +390,15 @@ export class TablaCrud {
   protected enviar(): void {
     const guardar = this.guardar();
     if (!guardar || this.guardando()) {
+      return;
+    }
+
+    // El campo de archivo no usa ngModel, así que su obligatoriedad se revisa aquí
+    const sinArchivo = this.camposEditables().find(
+      (c) => c.tipo === 'archivo' && c.requerido && !this.valor(c.clave),
+    );
+    if (sinArchivo) {
+      this.error.set(`Elige un archivo para «${sinArchivo.etiqueta}».`);
       return;
     }
 
