@@ -1,6 +1,6 @@
 import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { MotelApi, ReservaApi } from '../../core/api/entidades';
+import { HabitacionApi, MotelApi, ReservaApi } from '../../core/api/entidades';
 import type { EstadoReserva } from '../../core/api/models';
 import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
 import { lista } from '../../shared/recursos';
@@ -50,7 +50,7 @@ const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
           titulo="Reservas"
           claveId="idReserva"
           sinDatos="Este motel no tiene reservas."
-          [campos]="campos"
+          [campos]="campos()"
           [cargar]="cargar()"
           [acciones]="acciones"
         />
@@ -73,14 +73,27 @@ export class ReservasMotel {
     () => lista(this.moteles)[0]?.idMotel ?? null,
   );
 
-  protected readonly campos: Campo[] = [
+  private readonly habitacionApi = inject(HabitacionApi);
+  private readonly habitaciones = rxResource({
+    params: () => this.motel() ?? undefined,
+    stream: ({ params }) => this.habitacionApi.porMotel(params),
+    defaultValue: [],
+  });
+
+  protected readonly campos = computed<Campo[]>(() => [
     { clave: 'codigoReserva', etiqueta: 'Código' },
+    {
+      clave: 'idHabitacion',
+      etiqueta: 'Habitación',
+      tipo: 'select',
+      opciones: lista(this.habitaciones).map((h) => ({ valor: h.idHabitacion!, texto: `Hab. ${h.numero}` })),
+    },
     { clave: 'fechaHoraInicio', etiqueta: 'Entrada', tipo: 'fechaHora' },
     { clave: 'fechaHoraFin', etiqueta: 'Salida', tipo: 'fechaHora' },
-    { clave: 'cantidadPersonas', etiqueta: 'Personas' },
+    { clave: 'cantidadPersonas', etiqueta: 'Personas', tipo: 'numero' },
     { clave: 'total', etiqueta: 'Total', tipo: 'decimal' },
     { clave: 'estado', etiqueta: 'Estado', esEstado: true },
-  ];
+  ]);
 
   /** La función se recrea al cambiar de motel, y eso hace recargar la tabla. */
   protected readonly cargar = computed(() => {
