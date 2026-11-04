@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { IMAGENES } from './imagenes';
 import type { Registro } from './tabla-crud';
 
 /**
@@ -12,11 +13,7 @@ import type { Registro } from './tabla-crud';
     <p class="suave pequeno" style="margin:0 0 8px">Así lo verán los clientes en el catálogo:</p>
     <article class="ficha">
       <div class="imagen">
-        @if (foto(); as src) {
-          <img [src]="src" alt="Foto elegida para el motel" />
-        } @else {
-          <span class="sin-foto" aria-hidden="true">☾</span>
-        }
+        <img [src]="foto() ?? sinFoto" [alt]="foto() ? 'Foto elegida para el motel' : ''" />
       </div>
       <div class="cuerpo">
         <div class="titulo">
@@ -66,10 +63,6 @@ import type { Registro } from './tabla-crud';
       width: 100%;
       height: 100%;
       object-fit: cover;
-    }
-    .sin-foto {
-      font-size: 3rem;
-      color: var(--marca);
     }
     .cuerpo {
       display: flex;
@@ -146,6 +139,7 @@ export class VistaMotel {
   readonly motel = input.required<Registro>();
   readonly foto = input<string | null>(null);
   readonly ciudad = input('');
+  protected readonly sinFoto = IMAGENES.sinFoto;
 
   protected texto(clave: string): string {
     const valor = this.motel()[clave];

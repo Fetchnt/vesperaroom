@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MotelApi, PagoApi, PerfilPropietarioApi, ReservaApi, UsuarioApi } from '../../core/api/entidades';
+import { IMAGENES } from '../../shared/imagenes';
 import { lista, valorDe } from '../../shared/recursos';
 
 /** Portada del administrador: totales del sistema y lo que espera una decisión suya. */
@@ -8,8 +9,7 @@ import { lista, valorDe } from '../../shared/recursos';
   standalone: false,
   selector: 'app-inicio-admin',
   template: `
-    <h1>Resumen</h1>
-    <p class="suave">Estado general de VesperaRoom.</p>
+    <app-cabecera [imagen]="imagenes.ciudad" titulo="Resumen" subtitulo="Estado general de VesperaRoom." />
 
     <div class="totales">
       @for (t of totales(); track t.texto) {
@@ -68,6 +68,7 @@ import { lista, valorDe } from '../../shared/recursos';
   `,
 })
 export class InicioAdmin {
+  protected readonly imagenes = IMAGENES;
   private readonly usuarioApi = inject(UsuarioApi);
   private readonly motelApi = inject(MotelApi);
   private readonly reservaApi = inject(ReservaApi);

@@ -7,6 +7,7 @@ import { ResumenApi } from '../../core/api/resumen';
 import type { Caracteristica, Resena, RespuestaPropietario, Tarifa, TipoHabitacion } from '../../core/api/models';
 import { SessionStore } from '../../core/auth/session';
 import { legible } from '../../shared/etiquetas';
+import { IMAGENES, usarSinFoto } from '../../shared/imagenes';
 import { desdeUrl, lista, valorDe } from '../../shared/recursos';
 
 type TipoDetallado = TipoHabitacion & {
@@ -52,10 +53,14 @@ function sumarHoras(valor: string, horas: number): string {
       </nav>
 
       <!-- Galería -->
-      @if (lista(fotos).length > 0) {
+      @if (lista(fotos).length === 0) {
         <section class="galeria">
-          <!-- Una URL rota se oculta; al cambiar de foto, load la vuelve a mostrar. -->
-          <img class="principal" [src]="fotoActiva() ?? lista(fotos)[0].uri" [alt]="m.nombre" (error)="$any($event.target).hidden = true" (load)="$any($event.target).hidden = false" />
+          <img class="principal" [src]="imagenes.sinFoto" alt="" />
+        </section>
+      } @else {
+        <section class="galeria">
+          <!-- Una URL rota se cambia por la foto genérica. -->
+          <img class="principal" [src]="fotoActiva() ?? lista(fotos)[0].uri" [alt]="m.nombre" (error)="usarSinFoto($event)" />
           @if (lista(fotos).length > 1) {
             <div class="miniaturas">
               @for (foto of lista(fotos); track foto.idFoto) {
@@ -310,6 +315,8 @@ function sumarHoras(valor: string, horas: number): string {
 })
 export class MotelDetalle {
   protected readonly lista = lista;
+  protected readonly imagenes = IMAGENES;
+  protected readonly usarSinFoto = usarSinFoto;
   protected readonly valorDe = valorDe;
   /** Viene del parámetro de ruta :id. */
   readonly id = input.required<string>();

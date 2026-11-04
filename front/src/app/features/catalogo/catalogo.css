@@ -211,11 +211,6 @@
   object-fit: cover;
 }
 
-.sin-foto {
-  font-size: 3rem;
-  color: var(--marca);
-}
-
 .cuerpo {
   display: flex;
   justify-content: space-between;

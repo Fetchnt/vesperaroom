@@ -4,6 +4,7 @@ import { switchMap } from 'rxjs';
 import { filtrar, type Orden, type Posicion } from '../../core/catalogo/filtros';
 import { CaracteristicaApi, CiudadApi, ModalidadApi, MotelApi } from '../../core/api/entidades';
 import { ResumenApi, type MotelResumen, type TipoResumen } from '../../core/api/resumen';
+import { IMAGENES, usarSinFoto } from '../../shared/imagenes';
 import { desdeUrl, lista } from '../../shared/recursos';
 
 /** Cuántas opciones de una lista larga se ven antes de «Ver más». */
@@ -152,11 +153,7 @@ const LIMITE = 5;
 
               <div class="ficha">
                 <a class="imagen" [routerLink]="['/motel', motel.idMotel]" [queryParams]="paramsDetalle()" tabindex="-1" aria-hidden="true">
-                  @if (motel.foto) {
-                    <img [src]="motel.foto" alt="" loading="lazy" (error)="$any($event.target).hidden = true" />
-                  } @else {
-                    <span class="sin-foto">☾</span>
-                  }
+                  <img [src]="motel.foto || imagenes.sinFoto" alt="" loading="lazy" (error)="usarSinFoto($event)" />
                 </a>
 
                 <div class="cuerpo">
@@ -207,6 +204,8 @@ const LIMITE = 5;
 })
 export class Catalogo {
   protected readonly lista = lista;
+  protected readonly imagenes = IMAGENES;
+  protected readonly usarSinFoto = usarSinFoto;
   protected readonly limite = LIMITE;
 
   /** Lo que llega del buscador por la URL (?donde=&fecha=&hora=). */

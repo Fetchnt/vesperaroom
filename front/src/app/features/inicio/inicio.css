@@ -6,7 +6,9 @@
   background:
     radial-gradient(circle at 80% 20%, rgb(212 17 63 / 0.55), transparent 55%),
     radial-gradient(circle at 10% 90%, rgb(120 20 60 / 0.6), transparent 50%),
-    linear-gradient(135deg, #1a0d14, #2b0f1d 60%, #120a10);
+    linear-gradient(135deg, rgb(26 13 20 / 0.92), rgb(43 15 29 / 0.78) 60%, rgb(18 10 16 / 0.7)),
+    url('/imagenes/portada.webp') center 35% / cover no-repeat,
+    #1a0d14;
 }
 
 .portada-texto {
@@ -121,6 +123,21 @@
   padding: 28px 32px;
   border-radius: var(--r-l);
   background: var(--marca-tenue);
+}
+
+.duenos-foto {
+  width: 180px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--r-m);
+  box-shadow: var(--sombra);
+}
+
+@media (max-width: 760px) {
+  .duenos-foto {
+    width: 100%;
+    aspect-ratio: 16 / 7;
+  }
 }
 
 .duenos h2 {
