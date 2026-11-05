@@ -3,86 +3,104 @@ import { ENLACES } from '../core/auth/enlaces';
 import { SessionStore } from '../core/auth/session';
 
 /**
- * Marco de las áreas de gestión (/admin y /panel): barra lateral con las
- * secciones del rol y la sección actual a la derecha. En pantallas angostas
- * la barra pasa a una fila de pestañas desplazable.
+ * Marco de las áreas de gestión (/admin y /panel): barra de pestañas arriba con
+ * las secciones del rol y la sección actual debajo, a todo el ancho. Si no caben,
+ * las pestañas se desplazan de lado.
  */
 @Component({
   standalone: false,
   selector: 'app-marco-gestion',
   template: `
-    <div class="marco">
-      <nav class="lateral" aria-label="Secciones de gestión">
-        <p class="rol suave pequeno">{{ titulo() }}</p>
+    <nav class="secciones" aria-label="Secciones de gestión">
+      <span class="area">{{ titulo() }}</span>
+      <div class="pestanas">
         @for (enlace of enlaces(); track enlace.ruta) {
           <a [routerLink]="enlace.ruta" routerLinkActive="activo" ariaCurrentWhenActive="page">{{ enlace.texto }}</a>
         }
-      </nav>
-      <section class="contenido">
-        <router-outlet />
-      </section>
-    </div>
+      </div>
+    </nav>
+    <section class="contenido">
+      <router-outlet />
+    </section>
   `,
   styles: `
-    .marco {
-      display: grid;
-      grid-template-columns: 200px minmax(0, 1fr);
-      gap: 32px;
-      align-items: start;
-    }
-    .lateral {
-      position: sticky;
-      top: 88px;
+    .secciones {
       display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 12px;
+      align-items: center;
+      gap: 8px 20px;
+      margin-bottom: 24px;
+      padding: 6px 8px 6px 16px;
       border: 1px solid var(--borde);
       border-radius: var(--r-l);
       background: var(--superficie);
+      box-shadow: var(--sombra);
     }
-    .rol {
-      margin: 0 0 6px;
-      padding: 0 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+    .area {
+      flex-shrink: 0;
+      color: var(--texto-suave);
+      font-size: 0.75rem;
       font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
-    .lateral a {
-      padding: 8px 10px;
-      border-radius: var(--r-s);
-      color: var(--texto);
-      font-weight: 500;
+    .pestanas {
+      display: flex;
+      gap: 4px;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .pestanas::-webkit-scrollbar {
+      display: none;
+    }
+    .pestanas a {
+      position: relative;
+      padding: 8px 14px;
+      border-radius: var(--r-m);
+      color: var(--texto-suave);
       font-size: 0.92rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
     }
-    .lateral a:hover {
+    .pestanas a::after {
+      content: '';
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 2px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--marca-solida);
+      transform: scaleX(0);
+      transition: transform 0.2s ease;
+    }
+    .pestanas a:hover {
       text-decoration: none;
+      color: var(--texto);
       background: var(--superficie-2);
     }
-    .lateral a.activo {
-      background: var(--marca-tenue);
+    .pestanas a.activo {
       color: var(--marca-fuerte);
-      box-shadow: inset 3px 0 0 var(--marca-solida);
+      background: var(--marca-tenue);
+    }
+    .pestanas a.activo::after {
+      transform: scaleX(1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pestanas a,
+      .pestanas a::after {
+        transition: none;
+      }
     }
     @media (max-width: 760px) {
-      .marco {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 16px;
-      }
-      .lateral {
-        position: static;
-        flex-direction: row;
-        overflow-x: auto;
-        padding: 6px;
-      }
-      .rol {
+      .area {
         display: none;
       }
-      .lateral a {
-        white-space: nowrap;
-      }
-      .lateral a.activo {
-        box-shadow: inset 0 -2px 0 var(--marca-solida);
+      .secciones {
+        padding: 6px;
       }
     }
   `,
@@ -90,10 +108,10 @@ import { SessionStore } from '../core/auth/session';
 export class MarcoGestion {
   private readonly sesion = inject(SessionStore);
 
-  /** «Mi cuenta» vive fuera del marco, así que queda solo en el menú de usuario. */
+  /** roleGuard ya garantiza el rol; un cliente que llegara aquí vería la barra vacía. */
   protected readonly enlaces = computed(() => {
     const rol = this.sesion.rol();
-    return (rol ? ENLACES[rol] : []).filter((e) => e.ruta !== '/mi-cuenta');
+    return rol && rol !== 'CLIENTE' ? ENLACES[rol] : [];
   });
   protected readonly titulo = computed(() =>
     this.sesion.rol() === 'ADMINISTRADOR' ? 'Administración' : 'Mi negocio',
