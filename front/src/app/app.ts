@@ -1,7 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './core/auth/auth';
-import { ENLACES, type Enlace } from './core/auth/enlaces';
+import { MENU, type Enlace } from './core/auth/enlaces';
 import { SessionStore } from './core/auth/session';
 
 @Component({
@@ -24,7 +24,7 @@ export class App {
   /** Lo que va en el menú de usuario, según el rol. */
   protected readonly enlaces = computed<Enlace[]>(() => {
     const rol = this.sesion.rol();
-    return rol ? ENLACES[rol] : [];
+    return rol ? MENU[rol] : [];
   });
 
   protected salir(): void {

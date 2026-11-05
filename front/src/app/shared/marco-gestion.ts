@@ -90,10 +90,10 @@ import { SessionStore } from '../core/auth/session';
 export class MarcoGestion {
   private readonly sesion = inject(SessionStore);
 
-  /** «Mi cuenta» vive fuera del marco, así que queda solo en el menú de usuario. */
+  /** roleGuard ya garantiza el rol; un cliente que llegara aquí vería la barra vacía. */
   protected readonly enlaces = computed(() => {
     const rol = this.sesion.rol();
-    return (rol ? ENLACES[rol] : []).filter((e) => e.ruta !== '/mi-cuenta');
+    return rol && rol !== 'CLIENTE' ? ENLACES[rol] : [];
   });
   protected readonly titulo = computed(() =>
     this.sesion.rol() === 'ADMINISTRADOR' ? 'Administración' : 'Mi negocio',

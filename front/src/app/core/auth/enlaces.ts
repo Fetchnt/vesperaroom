@@ -5,18 +5,16 @@ export interface Enlace {
   texto: string;
 }
 
-/** Secciones de cada rol: las usan el menú de usuario y la barra lateral de gestión. */
-export const ENLACES: Record<Rol, Enlace[]> = {
-  CLIENTE: [
-    { ruta: '/mis-reservas', texto: 'Mis reservas' },
-    { ruta: '/mi-cuenta', texto: 'Mi cuenta' },
-  ],
+/** Roles con área de gestión propia (/admin y /panel). */
+export type RolGestion = Exclude<Rol, 'CLIENTE'>;
+
+/** Secciones de la barra lateral de cada área de gestión. */
+export const ENLACES: Record<RolGestion, Enlace[]> = {
   PROPIETARIO: [
     { ruta: '/panel/moteles', texto: 'Mis moteles' },
     { ruta: '/panel/reservas', texto: 'Reservas' },
     { ruta: '/panel/resenas', texto: 'Reseñas' },
     { ruta: '/panel/perfil', texto: 'Mi perfil' },
-    { ruta: '/mi-cuenta', texto: 'Mi cuenta' },
   ],
   ADMINISTRADOR: [
     { ruta: '/admin/inicio', texto: 'Resumen' },
@@ -27,6 +25,24 @@ export const ENLACES: Record<Rol, Enlace[]> = {
     { ruta: '/admin/reservas', texto: 'Reservas' },
     { ruta: '/admin/pagos', texto: 'Pagos' },
     { ruta: '/admin/resenas', texto: 'Reseñas' },
+  ],
+};
+
+/**
+ * Menú del avatar: la entrada al área propia de cada rol y la cuenta. Las
+ * secciones de gestión no se repiten aquí porque ya están en la barra lateral.
+ */
+export const MENU: Record<Rol, Enlace[]> = {
+  CLIENTE: [
+    { ruta: '/mis-reservas', texto: 'Mis reservas' },
+    { ruta: '/mi-cuenta', texto: 'Mi cuenta' },
+  ],
+  PROPIETARIO: [
+    { ruta: '/panel', texto: 'Mi negocio' },
+    { ruta: '/mi-cuenta', texto: 'Mi cuenta' },
+  ],
+  ADMINISTRADOR: [
+    { ruta: '/admin', texto: 'Administración' },
     { ruta: '/mi-cuenta', texto: 'Mi cuenta' },
   ],
 };
