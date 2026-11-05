@@ -4,6 +4,7 @@ import { forkJoin, map, of, switchMap, type Observable } from 'rxjs';
 import { PagoApi, ResenaApi, ReservaApi } from '../../core/api/entidades';
 import type { MetodoPago, Pago, Resena, Reserva } from '../../core/api/models';
 import { legible } from '../../shared/etiquetas';
+import { IMAGENES } from '../../shared/imagenes';
 import { lista } from '../../shared/recursos';
 
 const METODOS: MetodoPago[] = [
@@ -24,10 +25,9 @@ type ReservaDetallada = Reserva & {
   standalone: false,
   selector: 'app-mis-reservas',
   template: `
-    <div class="encabezado-seccion">
-      <h1>Mis reservas</h1>
-      <button type="button" class="plano" (click)="reservas.reload()">Actualizar</button>
-    </div>
+    <app-cabecera [imagen]="imagenes.habitacion" titulo="Mis reservas" subtitulo="Tus noches reservadas, sus pagos y reseñas.">
+      <button type="button" (click)="reservas.reload()">Actualizar</button>
+    </app-cabecera>
 
     @if (mensaje(); as texto) {
       <p class="aviso ok">{{ texto }}</p>
@@ -200,6 +200,7 @@ type ReservaDetallada = Reserva & {
 })
 export class MisReservas {
   protected readonly lista = lista;
+  protected readonly imagenes = IMAGENES;
   private readonly reservaApi = inject(ReservaApi);
   private readonly pagoApi = inject(PagoApi);
   private readonly resenaApi = inject(ResenaApi);

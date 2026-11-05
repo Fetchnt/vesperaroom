@@ -4,6 +4,7 @@ import { switchMap } from 'rxjs';
 import { esDestacado } from '../../core/catalogo/filtros';
 import { MotelApi } from '../../core/api/entidades';
 import { ResumenApi, type MotelResumen } from '../../core/api/resumen';
+import { IMAGENES, usarSinFoto } from '../../shared/imagenes';
 import { lista } from '../../shared/recursos';
 
 /** Cuántos moteles se muestran en la portada. */
@@ -42,9 +43,7 @@ const EN_PORTADA = 3;
           @for (m of mejores(); track m.idMotel) {
             <a class="tarjeta tarjeta-enlace motel" [routerLink]="['/motel', m.idMotel]">
               <div class="foto">
-                @if (m.foto) {
-                  <img [src]="m.foto" alt="" loading="lazy" (error)="$any($event.target).hidden = true" />
-                }
+                <img [src]="m.foto || imagenes.sinFoto" alt="" loading="lazy" (error)="usarSinFoto($event)" />
                 @if (destacado(m)) {
                   <span class="sello">Destacado</span>
                 }
@@ -65,7 +64,8 @@ const EN_PORTADA = 3;
     </section>
 
     <section class="duenos">
-      <div>
+      <img class="duenos-foto" [src]="imagenes.llaves" alt="" loading="lazy" />
+      <div class="crece">
         <h2>¿Eres dueño de un motel?</h2>
         <p>Publica tus habitaciones, tarifas y servicios, y recibe reservas desde VesperaRoom.</p>
       </div>
@@ -79,6 +79,8 @@ export class Inicio {
   private readonly resumenApi = inject(ResumenApi);
 
   protected readonly destacado = esDestacado;
+  protected readonly imagenes = IMAGENES;
+  protected readonly usarSinFoto = usarSinFoto;
 
   protected readonly moteles = rxResource<MotelResumen[], unknown>({
     stream: () => this.motelApi.activos().pipe(switchMap((lista) => this.resumenApi.resumir(lista))),

@@ -4,7 +4,8 @@ import { Component } from '@angular/core';
   standalone: false,
   selector: 'app-no-encontrada',
   template: `
-    <div class="tarjeta pila">
+    <div class="tarjeta pila error-ilustrado">
+      <img src="/imagenes/letrero.webp" alt="" />
       <h1>Página no encontrada</h1>
       <p class="suave">La dirección que abriste no existe.</p>
       <a routerLink="/">Volver al catálogo</a>

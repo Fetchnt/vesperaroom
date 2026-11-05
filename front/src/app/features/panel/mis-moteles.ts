@@ -3,17 +3,18 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { CiudadApi, MotelApi } from '../../core/api/entidades';
 import type { Motel } from '../../core/api/models';
 import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-crud';
+import { IMAGENES } from '../../shared/imagenes';
 import { lista } from '../../shared/recursos';
 
 @Component({
   standalone: false,
   selector: 'app-mis-moteles',
   template: `
-    <h1>Mis moteles</h1>
-    <p class="suave">
-      Abre un motel para administrar su política, tipos de habitación, habitaciones, tarifas,
-      servicios y fotos.
-    </p>
+    <app-cabecera
+      [imagen]="imagenes.mostrador"
+      titulo="Mis moteles"
+      subtitulo="Abre un motel para administrar su política, tipos de habitación, habitaciones, tarifas, servicios y fotos."
+    />
 
     <app-tabla-crud
       titulo="Moteles"
@@ -34,6 +35,7 @@ import { lista } from '../../shared/recursos';
   `,
 })
 export class MisMoteles {
+  protected readonly imagenes = IMAGENES;
   protected readonly lista = lista;
   private readonly motelApi = inject(MotelApi);
   private readonly ciudadApi = inject(CiudadApi);

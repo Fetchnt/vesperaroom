@@ -4,6 +4,7 @@ import { UsuarioApi } from '../../core/api/entidades';
 import type { Usuario } from '../../core/api/models';
 import { SessionStore } from '../../core/auth/session';
 import { legible } from '../../shared/etiquetas';
+import { IMAGENES } from '../../shared/imagenes';
 import { valorDe } from '../../shared/recursos';
 
 @Component({
@@ -11,10 +12,7 @@ import { valorDe } from '../../shared/recursos';
   selector: 'app-mi-cuenta',
   template: `
     <div class="angosto pila">
-      <div class="encabezado-seccion">
-        <h1>Mi cuenta</h1>
-        <span class="pequeno suave">{{ rolLegible() }}</span>
-      </div>
+      <app-cabecera [imagen]="imagenes.habitacion" titulo="Mi cuenta" [subtitulo]="rolLegible()" />
 
       @if (cuenta.isLoading()) {
         <p class="suave">Cargando…</p>
@@ -78,6 +76,7 @@ import { valorDe } from '../../shared/recursos';
   `,
 })
 export class MiCuenta {
+  protected readonly imagenes = IMAGENES;
   protected readonly valorDe = valorDe;
   private readonly usuarios = inject(UsuarioApi);
   private readonly sesion = inject(SessionStore);

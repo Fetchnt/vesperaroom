@@ -2,6 +2,7 @@ import { Component, inject, input, signal, type OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth';
 import type { Rol, Usuario } from '../../core/api/models';
+import { IMAGENES } from '../../shared/imagenes';
 import { desdeUrl } from '../../shared/recursos';
 
 @Component({
@@ -9,7 +10,11 @@ import { desdeUrl } from '../../shared/recursos';
   selector: 'app-registro',
   template: `
     <div class="pantalla-acceso">
-      <div class="decorado" aria-hidden="true">
+      <div
+        class="decorado"
+        aria-hidden="true"
+        [style.--foto]="'url(' + (datos.rol === 'PROPIETARIO' ? imagenes.recepcion : imagenes.registro) + ')'"
+      >
         <span class="luna">☾</span>
         <p>{{ datos.rol === 'PROPIETARIO' ? 'Publica tu motel y recibe reservas.' : 'Reserva en un paso, paga al llegar.' }}</p>
       </div>
@@ -77,6 +82,7 @@ import { desdeUrl } from '../../shared/recursos';
   `,
 })
 export class Registro implements OnInit {
+  protected readonly imagenes = IMAGENES;
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
