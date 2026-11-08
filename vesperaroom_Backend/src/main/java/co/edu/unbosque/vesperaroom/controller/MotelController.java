@@ -207,16 +207,22 @@ public class MotelController {
 	 * @param id     identificador del motel
 	 * @param actual usuario autenticado
 	 * @return {@link ResponseEntity} con código 202 si es exitoso, 403 si no es su
-	 *         motel, 404 si no existe o 409 si tiene registros asociados
+	 *         motel, 404 si no existe o 409 si tiene reservas
 	 */
-	@Operation(summary = "Eliminar motel", description = "Elimina un motel propio sin registros asociados.")
+	@Operation(summary = "Eliminar motel", description = "Elimina un motel propio con su configuración, si no tiene reservas.")
 	@DeleteMapping("/deletebyid/{id}")
 	public ResponseEntity<String> eliminar(@PathVariable Long id, @AuthenticationPrincipal Usuario actual) {
 		if (!autorizacionService.puedeGestionarMotel(actual, id)) {
 			return RespuestaGeneral.prohibido();
 		}
 
-		return RespuestaGeneral.eliminar(motelService.deleteById(id), "motel", false);
+		int status = motelService.deleteById(id);
+		if (status == 2) {
+			return new ResponseEntity<>(
+					"El motel tiene reservas y no puede eliminarse. Puedes desactivarlo para que no reciba más.",
+					HttpStatus.CONFLICT);
+		}
+		return RespuestaGeneral.eliminar(status, "motel", false);
 	}
 
 	/**

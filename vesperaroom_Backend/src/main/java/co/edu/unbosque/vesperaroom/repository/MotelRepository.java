@@ -69,6 +69,18 @@ public class MotelRepository {
 
 	private static final String DELETE = "DELETE FROM motel WHERE id_motel = ?";
 
+	/**
+	 * Lo que cuelga del motel, en el orden que exigen las llaves foráneas: cada
+	 * sentencia recibe el id del motel como único parámetro.
+	 */
+	private static final String[] DELETE_DEPENDIENTES = {
+			"DELETE FROM foto WHERE id_habitacion IN (SELECT id_habitacion FROM habitacion WHERE id_motel = ?)",
+			"DELETE FROM foto WHERE id_motel = ?",
+			"DELETE FROM tarifa WHERE id_tipo IN (SELECT id_tipo FROM tipo_habitacion WHERE id_motel = ?)",
+			"DELETE FROM habitacion WHERE id_motel = ?",
+			"DELETE FROM tipo_habitacion WHERE id_motel = ?",
+			"DELETE FROM servicio_adicional WHERE id_motel = ?" };
+
 	private final DataSource dataSource;
 
 	public MotelRepository(DataSource dataSource) {
@@ -264,17 +276,44 @@ public class MotelRepository {
 	}
 
 	/**
-	 * Elimina un motel según su identificador.
+	 * Elimina un motel junto con su configuración, en una sola transacción: fotos,
+	 * tarifas, habitaciones, tipos de habitación (y sus características) y
+	 * servicios adicionales. La política se borra sola por {@code ON DELETE
+	 * CASCADE}.
+	 *
+	 * <p>
+	 * Si alguna habitación, tarifa o servicio aparece en una reserva, la base de
+	 * datos rechaza el borrado, se revierte todo y el motel queda intacto.
+	 * </p>
 	 *
 	 * @param id identificador del motel a eliminar
-	 * @return cantidad de filas afectadas
+	 * @return cantidad de moteles eliminados (0 o 1)
 	 * @throws SQLException si ocurre un error de acceso a la base de datos o
-	 *                      el motel tiene registros que dependen de él
+	 *                      el motel tiene reservas
 	 */
 	public int eliminar(Long id) throws SQLException {
-		try (Connection con = dataSource.getConnection(); PreparedStatement ps = con.prepareStatement(DELETE)) {
-			ps.setLong(1, id);
-			return ps.executeUpdate();
+		try (Connection con = dataSource.getConnection()) {
+			con.setAutoCommit(false);
+			try {
+				for (String sql : DELETE_DEPENDIENTES) {
+					try (PreparedStatement ps = con.prepareStatement(sql)) {
+						ps.setLong(1, id);
+						ps.executeUpdate();
+					}
+				}
+				int filas;
+				try (PreparedStatement ps = con.prepareStatement(DELETE)) {
+					ps.setLong(1, id);
+					filas = ps.executeUpdate();
+				}
+				con.commit();
+				return filas;
+			} catch (SQLException e) {
+				con.rollback();
+				throw e;
+			} finally {
+				con.setAutoCommit(true);
+			}
 		}
 	}
 
