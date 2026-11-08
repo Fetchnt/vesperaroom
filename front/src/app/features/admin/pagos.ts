@@ -8,7 +8,6 @@ import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-c
 const ACCIONES: { estado: EstadoPago; texto: string; peligro?: boolean }[] = [
   { estado: 'APROBADO', texto: 'Aprobar' },
   { estado: 'RECHAZADO', texto: 'Rechazar', peligro: true },
-  { estado: 'REEMBOLSADO', texto: 'Reembolsar' },
 ];
 
 @Component({

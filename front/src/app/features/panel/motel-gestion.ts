@@ -61,7 +61,7 @@ const ESTADOS_HABITACION: EstadoHabitacion[] = ['ACTIVA', 'MANTENIMIENTO', 'FUER
       @case ('politica') {
         <app-tabla-crud
           titulo="Política de reserva"
-          descripcion="Un motel tiene una sola política: define la anticipación mínima, el recargo por persona adicional y el reembolso por cancelación."
+          descripcion="Un motel tiene una sola política: define la anticipación mínima y el recargo por persona adicional."
           claveId="idMotel"
           sinDatos="Este motel aún no tiene política. Agrégala para poder recibir reservas."
           [campos]="camposPolitica"
@@ -295,19 +295,11 @@ export class MotelGestion {
       requerido: true,
     },
     {
-      clave: 'diasHabilesDevolucion',
-      etiqueta: 'Días hábiles de devolución',
-      tipo: 'numero',
-      requerido: true,
-    },
-    { clave: 'porcentajeReembolso', etiqueta: 'Reembolso (%)', tipo: 'numero', requerido: true },
-    {
       clave: 'tiempoGraciaNoShowMin',
-      etiqueta: 'Gracia no-show (min)',
+      etiqueta: 'Tolerancia por inasistencia (min)',
       tipo: 'numero',
       requerido: true,
     },
-    { clave: 'aceptaReembolso', etiqueta: 'Acepta reembolso', soloLectura: true },
   ];
 
   protected readonly cargarPolitica = computed(() => {
@@ -315,8 +307,17 @@ export class MotelGestion {
     return () => this.politicaApi.deMotel(id).pipe(map((p) => (p ? [p] : [])));
   });
 
+  /**
+   * El reembolso no se gestiona desde el aplicativo, pero el backend exige sus
+   * dos campos: una política nueva los manda en 0 y una editada conserva los suyos.
+   */
   protected readonly guardarPolitica = (idFila: number | string | null, dto: Registro) => {
-    const politica = { ...dto, idMotel: this.idMotel() } as unknown as PoliticaReserva;
+    const politica = {
+      porcentajeReembolso: 0,
+      diasHabilesDevolucion: 0,
+      ...dto,
+      idMotel: this.idMotel(),
+    } as unknown as PoliticaReserva;
     return idFila === null
       ? this.politicaApi.crud.crear(politica)
       : this.politicaApi.crud.actualizar(this.idMotel(), politica);

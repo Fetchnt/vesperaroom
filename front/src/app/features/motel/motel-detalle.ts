@@ -302,15 +302,6 @@ function sumarHoras(valor: string, horas: number): string {
                     Hasta <strong>{{ p.capacidadMaxSinRecargo }} personas</strong> sin recargo; cada persona de más
                     cuesta {{ p.tarifaPersonaAdicional | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}.
                   </li>
-                  <li>
-                    @if (p.aceptaReembolso) {
-                      Si cancelas antes de la hora de entrada te devolvemos el
-                      <strong>{{ p.porcentajeReembolso }}%</strong> de lo pagado, en un máximo de
-                      {{ p.diasHabilesDevolucion }} días hábiles.
-                    } @else {
-                      Este motel <strong>no hace reembolsos</strong> por cancelación.
-                    }
-                  </li>
                 </ul>
               </details>
             }

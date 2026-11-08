@@ -57,14 +57,6 @@ type ReservaDetallada = Reserva & {
             @if (r.estado === 'CANCELADA') {
               <p class="pequeno suave">
                 Cancelada el {{ r.fechaCancelacion | date: 'medium' }}.
-                @if (r.montoReembolso) {
-                  Reembolso de {{ r.montoReembolso | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
-                  @if (r.fechaLimiteReembolso) {
-                    hasta el {{ r.fechaLimiteReembolso | date: 'mediumDate' }}
-                  }
-                } @else {
-                  Sin reembolso.
-                }
               </p>
             }
 
@@ -308,7 +300,7 @@ export class MisReservas {
     }
     const si = await this.avisos.confirmar({
       titulo: `¿Cancelar la reserva ${r.codigoReserva}?`,
-      texto: 'El reembolso depende de la política del motel. Esta acción no se puede deshacer.',
+      texto: 'Esta acción no se puede deshacer.',
       aceptar: 'Cancelar reserva',
       cancelar: 'Mantenerla',
       peligro: true,

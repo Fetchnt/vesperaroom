@@ -1,7 +1,15 @@
+/** Enums cuyo nombre en el backend no sirve como texto en español. */
+const TEXTOS: Record<string, string> = {
+  NO_SHOW: 'Inasistencia',
+};
+
 /** Los enums del backend llegan como ACTIVO, FUERA_DE_SERVICIO, TARJETA_CREDITO... */
 export function legible(valor: string | null | undefined): string {
   if (!valor) {
     return '—';
+  }
+  if (TEXTOS[valor]) {
+    return TEXTOS[valor];
   }
   const texto = valor.replaceAll('_', ' ').toLowerCase();
   return texto.charAt(0).toUpperCase() + texto.slice(1);
