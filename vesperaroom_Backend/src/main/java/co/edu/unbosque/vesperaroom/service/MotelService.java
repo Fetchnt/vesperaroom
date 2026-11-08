@@ -18,6 +18,8 @@ import co.edu.unbosque.vesperaroom.dto.MotelResumenDTO;
 import co.edu.unbosque.vesperaroom.dto.TarifaDTO;
 import co.edu.unbosque.vesperaroom.dto.TipoResumenDTO;
 import co.edu.unbosque.vesperaroom.entity.Caracteristica;
+import co.edu.unbosque.vesperaroom.entity.Foto;
+import co.edu.unbosque.vesperaroom.entity.Habitacion;
 import co.edu.unbosque.vesperaroom.entity.Motel;
 import co.edu.unbosque.vesperaroom.entity.Motel.Estado;
 import co.edu.unbosque.vesperaroom.entity.Tarifa;
@@ -30,6 +32,8 @@ import co.edu.unbosque.vesperaroom.exception.ReferenciaNoEncontradaException;
 import co.edu.unbosque.vesperaroom.exception.RegistroNoEncontradoException;
 import co.edu.unbosque.vesperaroom.exception.TextoInvalidoException;
 import co.edu.unbosque.vesperaroom.repository.CiudadRepository;
+import co.edu.unbosque.vesperaroom.repository.FotoRepository;
+import co.edu.unbosque.vesperaroom.repository.HabitacionRepository;
 import co.edu.unbosque.vesperaroom.repository.MotelRepository;
 import co.edu.unbosque.vesperaroom.repository.PerfilPropietarioRepository;
 import co.edu.unbosque.vesperaroom.repository.TarifaRepository;
@@ -72,17 +76,45 @@ public class MotelService implements CRUDOperation<MotelDTO> {
 	private final CiudadRepository ciudadRepository;
 	private final TipoHabitacionRepository tipoHabitacionRepository;
 	private final TarifaRepository tarifaRepository;
+	private final HabitacionRepository habitacionRepository;
+	private final FotoRepository fotoRepository;
+	private final AlmacenImagenService almacen;
 	private final ModelMapper mapper;
 
 	public MotelService(MotelRepository motelRepository, PerfilPropietarioRepository perfilPropietarioRepository,
 			CiudadRepository ciudadRepository, TipoHabitacionRepository tipoHabitacionRepository,
-			TarifaRepository tarifaRepository, ModelMapper mapper) {
+			TarifaRepository tarifaRepository, HabitacionRepository habitacionRepository,
+			FotoRepository fotoRepository, AlmacenImagenService almacen, ModelMapper mapper) {
 		this.motelRepository = motelRepository;
 		this.perfilPropietarioRepository = perfilPropietarioRepository;
 		this.ciudadRepository = ciudadRepository;
 		this.tipoHabitacionRepository = tipoHabitacionRepository;
 		this.tarifaRepository = tarifaRepository;
+		this.habitacionRepository = habitacionRepository;
+		this.fotoRepository = fotoRepository;
+		this.almacen = almacen;
 		this.mapper = mapper;
+	}
+
+	/**
+	 * Direcciones de todas las fotos del motel: las generales y las de cada una
+	 * de sus habitaciones.
+	 *
+	 * @param idMotel identificador del motel
+	 * @return direcciones guardadas en la tabla {@code foto}
+	 * @throws SQLException si falla alguna consulta
+	 */
+	private List<String> imagenesDe(Long idMotel) throws SQLException {
+		List<String> uris = new ArrayList<>();
+		for (Foto f : fotoRepository.findByMotel(idMotel)) {
+			uris.add(f.getUri());
+		}
+		for (Habitacion h : habitacionRepository.findByMotel(idMotel)) {
+			for (Foto f : fotoRepository.findByHabitacion(h.getIdHabitacion())) {
+				uris.add(f.getUri());
+			}
+		}
+		return uris;
 	}
 
 	/**
@@ -193,18 +225,21 @@ public class MotelService implements CRUDOperation<MotelDTO> {
 	}
 
 	/**
-	 * Elimina un motel según su ID. Su política de reserva se borra en cascada;
-	 * si tiene tipos, habitaciones, fotos o servicios, MySQL impide el borrado.
+	 * Elimina un motel con toda su configuración (política, tipos, habitaciones,
+	 * tarifas, servicios y fotos) y borra del disco las imágenes de sus fotos. Si
+	 * tiene reservas, MySQL impide el borrado y no se toca nada.
 	 *
 	 * @param id identificador del motel
-	 * @return 0 si se eliminó, 1 si no existe, 2 si tiene registros asociados, 3
-	 *         si ocurre un error inesperado
+	 * @return 0 si se eliminó, 1 si no existe, 2 si tiene reservas, 3 si ocurre
+	 *         un error inesperado
 	 */
 	@Override
 	public int deleteById(Long id) {
 		try {
 			LanzadorExcepciones.verificarExistencia(motelRepository.existsById(id), ENTIDAD, id);
+			List<String> imagenes = imagenesDe(id);
 			motelRepository.eliminar(id);
+			imagenes.forEach(almacen::eliminar);
 			return 0;
 		} catch (RegistroNoEncontradoException e) {
 			return 1;
