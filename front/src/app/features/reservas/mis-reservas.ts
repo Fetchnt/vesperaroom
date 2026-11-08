@@ -3,6 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { forkJoin, map, of, switchMap, type Observable } from 'rxjs';
 import { PagoApi, ResenaApi, ReservaApi } from '../../core/api/entidades';
 import type { MetodoPago, Pago, Resena, Reserva } from '../../core/api/models';
+import { Avisos } from '../../shared/avisos';
 import { legible } from '../../shared/etiquetas';
 import { IMAGENES } from '../../shared/imagenes';
 import { lista } from '../../shared/recursos';
@@ -28,13 +29,6 @@ type ReservaDetallada = Reserva & {
     <app-cabecera [imagen]="imagenes.habitacion" titulo="Mis reservas" subtitulo="Tus noches reservadas, sus pagos y reseñas.">
       <button type="button" (click)="reservas.reload()">Actualizar</button>
     </app-cabecera>
-
-    @if (mensaje(); as texto) {
-      <p class="aviso ok">{{ texto }}</p>
-    }
-    @if (error(); as texto) {
-      <p class="aviso mal">{{ texto }}</p>
-    }
 
     @if (reservas.isLoading()) {
       <p class="suave">Cargando…</p>
@@ -204,12 +198,11 @@ export class MisReservas {
   private readonly reservaApi = inject(ReservaApi);
   private readonly pagoApi = inject(PagoApi);
   private readonly resenaApi = inject(ResenaApi);
+  private readonly avisos = inject(Avisos);
 
   protected readonly legible = legible;
   protected readonly metodos = METODOS;
 
-  protected readonly mensaje = signal('');
-  protected readonly error = signal('');
   protected readonly trabajando = signal(false);
 
   protected readonly pagando = signal<number | null>(null);
@@ -252,7 +245,6 @@ export class MisReservas {
     this.pagando.set(r.idReserva ?? null);
     this.metodo.set('EFECTIVO');
     this.referencia.set('');
-    this.limpiarAvisos();
   }
 
   /** Abre el formulario vacío, o con la reseña actual si ya existe. */
@@ -260,7 +252,6 @@ export class MisReservas {
     this.resenando.set(r.idReserva ?? null);
     this.calificacion.set(r.resena?.calificacion ?? 5);
     this.comentario.set(r.resena?.comentario ?? '');
-    this.limpiarAvisos();
   }
 
   protected registrarPago(r: ReservaDetallada): void {
@@ -295,46 +286,52 @@ export class MisReservas {
     );
   }
 
-  protected borrarResena(resena: Resena): void {
-    if (
-      this.trabajando() ||
-      !confirm('¿Eliminar tu reseña? También se borra la respuesta del motel, si la hay.')
-    ) {
+  protected async borrarResena(resena: Resena): Promise<void> {
+    if (this.trabajando()) {
       return;
     }
-    this.ejecutar(this.resenaApi.crud.eliminar(resena.idResena!));
+    const si = await this.avisos.confirmar({
+      titulo: '¿Eliminar tu reseña?',
+      texto: 'También se borra la respuesta del motel, si la hay.',
+      aceptar: 'Eliminar reseña',
+      cancelar: 'Conservarla',
+      peligro: true,
+    });
+    if (si) {
+      this.ejecutar(this.resenaApi.crud.eliminar(resena.idResena!));
+    }
   }
 
-  protected cancelar(r: ReservaDetallada): void {
-    if (
-      this.trabajando() ||
-      !confirm('¿Cancelar esta reserva? El reembolso depende de la política del motel.')
-    ) {
+  protected async cancelar(r: ReservaDetallada): Promise<void> {
+    if (this.trabajando()) {
       return;
     }
-    this.ejecutar(this.reservaApi.cancelar(r.idReserva!));
+    const si = await this.avisos.confirmar({
+      titulo: `¿Cancelar la reserva ${r.codigoReserva}?`,
+      texto: 'El reembolso depende de la política del motel. Esta acción no se puede deshacer.',
+      aceptar: 'Cancelar reserva',
+      cancelar: 'Mantenerla',
+      peligro: true,
+    });
+    if (si) {
+      this.ejecutar(this.reservaApi.cancelar(r.idReserva!));
+    }
   }
 
   private ejecutar(peticion: Observable<string>, alTerminar?: () => void): void {
     this.trabajando.set(true);
-    this.limpiarAvisos();
 
     peticion.subscribe({
       next: (respuesta) => {
         this.trabajando.set(false);
-        this.mensaje.set(respuesta);
+        this.avisos.exito(respuesta);
         alTerminar?.();
         this.reservas.reload();
       },
       error: (e: Error) => {
         this.trabajando.set(false);
-        this.error.set(e.message);
+        this.avisos.error(e.message);
       },
     });
-  }
-
-  private limpiarAvisos(): void {
-    this.mensaje.set('');
-    this.error.set('');
   }
 }

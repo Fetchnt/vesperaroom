@@ -3,6 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { forkJoin, map, of, switchMap, type Observable } from 'rxjs';
 import { MotelApi, ResenaApi, RespuestaApi } from '../../core/api/entidades';
 import type { Resena, RespuestaPropietario } from '../../core/api/models';
+import { Avisos } from '../../shared/avisos';
 import { lista } from '../../shared/recursos';
 
 type ResenaConRespuesta = Resena & { respuesta: RespuestaPropietario | null };
@@ -28,13 +29,6 @@ type ResenaConRespuesta = Resena & { respuesta: RespuestaPropietario | null };
           </select>
         </label>
       </form>
-
-      @if (mensaje(); as texto) {
-        <p class="aviso ok">{{ texto }}</p>
-      }
-      @if (error(); as texto) {
-        <p class="aviso mal">{{ texto }}</p>
-      }
 
       @if (resenas.isLoading()) {
         <p class="suave">Cargando reseñas…</p>
@@ -107,6 +101,7 @@ export class ResenasMotel {
   private readonly motelApi = inject(MotelApi);
   private readonly resenaApi = inject(ResenaApi);
   private readonly respuestaApi = inject(RespuestaApi);
+  private readonly avisos = inject(Avisos);
 
   protected readonly moteles = rxResource({
     stream: () => this.motelApi.mios(),
@@ -118,8 +113,6 @@ export class ResenasMotel {
   protected readonly editando = signal<number | null>(null);
   protected readonly borrador = signal('');
   protected readonly trabajando = signal(false);
-  protected readonly mensaje = signal('');
-  protected readonly error = signal('');
 
   /** Las respuestas del propietario viven en su propio endpoint, una por reseña. */
   protected readonly resenas = rxResource<ResenaConRespuesta[], number | null>({
@@ -146,8 +139,6 @@ export class ResenasMotel {
   protected abrir(r: ResenaConRespuesta): void {
     this.editando.set(r.idResena ?? null);
     this.borrador.set(r.respuesta?.comentario ?? '');
-    this.mensaje.set('');
-    this.error.set('');
   }
 
   protected guardar(r: ResenaConRespuesta): void {
@@ -163,28 +154,34 @@ export class ResenasMotel {
     this.ejecutar(peticion, () => this.editando.set(null));
   }
 
-  protected borrar(r: ResenaConRespuesta): void {
-    if (this.trabajando() || !confirm('¿Eliminar tu respuesta?')) {
+  protected async borrar(r: ResenaConRespuesta): Promise<void> {
+    if (this.trabajando()) {
       return;
     }
-    this.ejecutar(this.respuestaApi.crud.eliminar(r.idResena!));
+    const si = await this.avisos.confirmar({
+      titulo: '¿Eliminar tu respuesta?',
+      texto: 'El cliente dejará de verla junto a su reseña.',
+      aceptar: 'Eliminar respuesta',
+      peligro: true,
+    });
+    if (si) {
+      this.ejecutar(this.respuestaApi.crud.eliminar(r.idResena!));
+    }
   }
 
   private ejecutar(peticion: Observable<string>, alTerminar?: () => void): void {
     this.trabajando.set(true);
-    this.mensaje.set('');
-    this.error.set('');
 
     peticion.subscribe({
       next: (respuesta) => {
         this.trabajando.set(false);
-        this.mensaje.set(respuesta);
+        this.avisos.exito(respuesta);
         alTerminar?.();
         this.resenas.reload();
       },
       error: (e: Error) => {
         this.trabajando.set(false);
-        this.error.set(e.message);
+        this.avisos.error(e.message);
       },
     });
   }
