@@ -6,8 +6,7 @@ import { type AccionFila, type Campo, type Registro } from '../../shared/tabla-c
 import { lista } from '../../shared/recursos';
 
 /**
- * Transiciones que admite el backend (ReservaService.cambiarEstado). Pasar a
- * CANCELADA desde aquí cancela con reembolso del 100 %.
+ * Transiciones que admite el backend (ReservaService.cambiarEstado).
  */
 const SIGUIENTES: Partial<Record<EstadoReserva, EstadoReserva[]>> = {
   PENDIENTE: ['CONFIRMADA', 'CANCELADA'],
@@ -19,7 +18,7 @@ const ACCIONES: { estado: EstadoReserva; texto: string }[] = [
   { estado: 'CONFIRMADA', texto: 'Confirmar' },
   { estado: 'EN_CURSO', texto: 'Marcar en curso' },
   { estado: 'FINALIZADA', texto: 'Finalizar' },
-  { estado: 'NO_SHOW', texto: 'No se presentó' },
+  { estado: 'NO_SHOW', texto: 'Marcar inasistencia' },
   { estado: 'CANCELADA', texto: 'Cancelar' },
 ];
 
@@ -108,7 +107,7 @@ export class ReservasMotel {
     peligro: estado === 'NO_SHOW' || estado === 'CANCELADA',
     confirmar:
       estado === 'CANCELADA'
-        ? '¿Cancelar esta reserva? Al cliente se le reembolsa el 100 % de lo pagado.'
+        ? '¿Cancelar esta reserva? Esta acción no se puede deshacer.'
         : undefined,
     ejecutar: (fila: Registro) =>
       this.reservaApi.cambiarEstado(fila['idReserva'] as number, estado),
