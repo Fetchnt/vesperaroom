@@ -2,16 +2,16 @@ import {
   Component,
   computed,
   effect,
-  type ElementRef,
+  inject,
   input,
   type OnDestroy,
   signal,
   type TemplateRef,
   untracked,
-  viewChild,
 } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { Id } from '../core/api/api';
+import { Avisos } from './avisos';
 import { legible } from './etiquetas';
 
 export type TipoCampo =
@@ -61,13 +61,6 @@ export interface AccionFila {
   peligro?: boolean;
   /** Pregunta que se muestra antes de ejecutar; sin ella la acción va directo. */
   confirmar?: string;
-}
-
-interface Pendiente {
-  pregunta: string;
-  boton: string;
-  peligro: boolean;
-  hacer: () => void;
 }
 
 const FORMATO_FECHA: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
@@ -144,9 +137,6 @@ function normalizar(texto: string): string {
 
       @if (error(); as texto) {
         <p class="aviso mal" role="alert">{{ texto }}</p>
-      }
-      @if (mensaje(); as texto) {
-        <p class="aviso ok" role="status">{{ texto }}</p>
       }
 
       @if (formAbierto()) {
@@ -362,18 +352,6 @@ function normalizar(texto: string): string {
         }
       }
     </section>
-
-    <dialog #dialogo class="dialogo" aria-labelledby="pregunta-tabla" (close)="pendiente.set(null)">
-      @if (pendiente(); as p) {
-        <p id="pregunta-tabla">{{ p.pregunta }}</p>
-        <div class="fila" style="justify-content:flex-end">
-          <button type="button" class="plano" (click)="dialogo.close()">Volver</button>
-          <button type="button" [class.peligro]="p.peligro" [class.primario]="!p.peligro" (click)="confirmar()">
-            {{ p.boton }}
-          </button>
-        </div>
-      }
-    </dialog>
   `,
   styles: `
     .plano-enlace {
@@ -452,19 +430,6 @@ function normalizar(texto: string): string {
         animation: none;
       }
     }
-    .dialogo {
-      border: 1px solid var(--borde);
-      border-radius: var(--r-l);
-      background: var(--superficie);
-      color: var(--texto);
-      box-shadow: var(--sombra);
-      padding: 20px;
-      max-width: 420px;
-      width: calc(100% - 32px);
-    }
-    .dialogo::backdrop {
-      background: rgb(0 0 0 / 0.45);
-    }
   `,
 })
 export class TablaCrud implements OnDestroy {
@@ -490,20 +455,18 @@ export class TablaCrud implements OnDestroy {
   readonly vistaPrevia = input<TemplateRef<{ $implicit: Registro; fotos: Record<string, string> }> | null>(null);
 
   protected readonly legible = legible;
-  private readonly dialogo = viewChild.required<ElementRef<HTMLDialogElement>>('dialogo');
+  private readonly avisos = inject(Avisos);
 
   protected readonly filas = signal<Registro[]>([]);
   protected readonly cargando = signal(false);
   protected readonly guardando = signal(false);
   protected readonly error = signal('');
-  protected readonly mensaje = signal('');
   protected readonly editandoId = signal<Id | null>(null);
   protected readonly borrador = signal<Registro>({});
   protected readonly formAbierto = signal(false);
   protected readonly ejecutando = signal(false);
   protected readonly consulta = signal('');
   protected readonly estado = signal<string | null>(null);
-  protected readonly pendiente = signal<Pendiente | null>(null);
   protected readonly viendoPrevia = signal(false);
   /** URLs temporales de las imágenes elegidas en los campos de archivo. */
   protected readonly vistas = signal<Record<string, string>>({});
@@ -633,28 +596,24 @@ export class TablaCrud implements OnDestroy {
     return typeof accion.texto === 'function' ? accion.texto(fila) : accion.texto;
   }
 
-  /** Abre el diálogo de confirmación; `hacer` solo corre si la persona confirma. */
-  private preguntar(pregunta: string, boton: string, peligro: boolean, hacer: () => void): void {
-    this.pendiente.set({ pregunta, boton, peligro, hacer });
-    this.dialogo().nativeElement.showModal();
-  }
-
-  protected confirmar(): void {
-    const p = this.pendiente();
-    this.dialogo().nativeElement.close();
-    p?.hacer();
-  }
-
-  protected ejecutarAccion(accion: AccionFila, fila: Registro): void {
+  protected async ejecutarAccion(accion: AccionFila, fila: Registro): Promise<void> {
     if (this.ejecutando()) {
       return;
     }
     if (accion.confirmar) {
-      const boton = this.textoAccion(accion, fila);
-      this.preguntar(accion.confirmar, boton, accion.peligro ?? false, () => this.correrAccion(accion, fila));
-    } else {
-      this.correrAccion(accion, fila);
+      // «¿Cancelar esta reserva? Al cliente…»: la pregunta es el título y el resto la explicación
+      const [titulo, ...resto] = accion.confirmar.split(/(?<=\?)\s+/);
+      const si = await this.avisos.confirmar({
+        titulo,
+        texto: resto.join(' ') || undefined,
+        aceptar: this.textoAccion(accion, fila),
+        peligro: accion.peligro,
+      });
+      if (!si) {
+        return;
+      }
     }
+    this.correrAccion(accion, fila);
   }
 
   private correrAccion(accion: AccionFila, fila: Registro): void {
@@ -663,12 +622,12 @@ export class TablaCrud implements OnDestroy {
     accion.ejecutar(fila).subscribe({
       next: (respuesta) => {
         this.ejecutando.set(false);
-        this.mensaje.set(respuesta);
+        this.avisos.exito(respuesta);
         this.recargar();
       },
       error: (e: Error) => {
         this.ejecutando.set(false);
-        this.error.set(e.message);
+        this.avisos.error(e.message);
       },
     });
   }
@@ -676,14 +635,12 @@ export class TablaCrud implements OnDestroy {
   protected nuevoRegistro(): void {
     this.editandoId.set(null);
     this.borrador.set({ ...this.porDefecto() });
-    this.mensaje.set('');
     this.formAbierto.set(true);
   }
 
   protected editar(fila: Registro): void {
     this.editandoId.set(fila[this.claveId()] as Id);
     this.borrador.set({ ...fila });
-    this.mensaje.set('');
     this.formAbierto.set(true);
   }
 
@@ -715,7 +672,7 @@ export class TablaCrud implements OnDestroy {
     guardar(this.editandoId(), this.borrador()).subscribe({
       next: (respuesta) => {
         this.guardando.set(false);
-        this.mensaje.set(respuesta);
+        this.avisos.exito(respuesta);
         this.cancelar();
         this.recargar();
       },
@@ -726,22 +683,29 @@ export class TablaCrud implements OnDestroy {
     });
   }
 
-  protected eliminar(fila: Registro): void {
+  protected async eliminar(fila: Registro): Promise<void> {
     const borrar = this.borrar();
     const id = fila[this.claveId()] as Id | undefined;
     if (!borrar || id === undefined) {
       return;
     }
 
-    this.preguntar('¿Eliminar este registro? Esta acción no se puede deshacer.', 'Eliminar', true, () => {
-      this.error.set('');
-      borrar(id).subscribe({
-        next: (respuesta) => {
-          this.mensaje.set(respuesta);
-          this.recargar();
-        },
-        error: (e: Error) => this.error.set(e.message),
-      });
+    const si = await this.avisos.confirmar({
+      titulo: '¿Eliminar este registro?',
+      texto: 'Esta acción no se puede deshacer.',
+      aceptar: 'Eliminar',
+      peligro: true,
+    });
+    if (!si) {
+      return;
+    }
+    this.error.set('');
+    borrar(id).subscribe({
+      next: (respuesta) => {
+        this.avisos.exito(respuesta);
+        this.recargar();
+      },
+      error: (e: Error) => this.avisos.error(e.message),
     });
   }
 }

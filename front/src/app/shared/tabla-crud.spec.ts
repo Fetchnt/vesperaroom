@@ -2,6 +2,7 @@ import { Component, NgModule } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
+import { Avisos } from './avisos';
 import { SharedModule } from './shared-module';
 import { type AccionFila, type Campo, type Registro, TablaCrud, textoCelda } from './tabla-crud';
 
@@ -33,15 +34,6 @@ class Anfitrion {
 class ModuloAnfitrion {}
 
 function montar(acciones: AccionFila[] = []) {
-  // jsdom no implementa <dialog>: basta con que showModal/close abran y cierren
-  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
-    this.open = true;
-  };
-  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
-    this.open = false;
-    this.dispatchEvent(new Event('close'));
-  };
-
   TestBed.configureTestingModule({ imports: [SharedModule], providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(TablaCrud);
   fixture.componentRef.setInput('campos', CAMPOS);
@@ -125,21 +117,28 @@ describe('TablaCrud', () => {
     expect(dom.querySelector<HTMLInputElement>('.formulario input')!.value).toBe('Motel Aurora');
   });
 
-  it('solo ejecuta la acción si se confirma en el diálogo', () => {
-    const ejecutar = vi.fn(() => of('Listo'));
-    const { fixture, dom, boton } = montar([{ texto: 'Cancelar reserva', confirmar: '¿Seguro?', ejecutar }]);
+  it('solo ejecuta la acción si se confirma, y avisa el resultado', async () => {
+    const ejecutar = vi.fn(() => of('Reserva cancelada.'));
+    const { boton } = montar([
+      { texto: 'Cancelar reserva', confirmar: '¿Cancelar esta reserva? Se reembolsa el 100 %.', ejecutar, peligro: true },
+    ]);
+    const avisos = TestBed.inject(Avisos);
 
     boton('Cancelar reserva').click();
-    fixture.detectChanges();
-    expect(dom.querySelector('dialog')!.open).toBe(true);
-    boton('Volver').click();
-    fixture.detectChanges();
+    expect(avisos.pregunta()).toEqual({
+      titulo: '¿Cancelar esta reserva?',
+      texto: 'Se reembolsa el 100 %.',
+      aceptar: 'Cancelar reserva',
+      peligro: true,
+    });
+    avisos.responder(false);
+    await Promise.resolve();
     expect(ejecutar).not.toHaveBeenCalled();
 
     boton('Cancelar reserva').click();
-    fixture.detectChanges();
-    [...dom.querySelectorAll('dialog button')].at(-1)!.dispatchEvent(new Event('click'));
-    fixture.detectChanges();
+    avisos.responder(true);
+    await Promise.resolve();
     expect(ejecutar).toHaveBeenCalledTimes(1);
+    expect(avisos.lista().at(-1)).toMatchObject({ tono: 'exito', texto: 'Reserva cancelada.' });
   });
 });
