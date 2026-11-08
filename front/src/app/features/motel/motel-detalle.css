@@ -425,6 +425,23 @@
   gap: 6px;
 }
 
+.duraciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: 6px;
+}
+
+.duraciones button {
+  padding: 8px 0;
+  font-weight: 600;
+}
+
+.duraciones button.elegida {
+  border-color: var(--marca);
+  background: var(--marca-tenue);
+  color: var(--marca-fuerte);
+}
+
 /* ---------- Móvil ---------- */
 
 @media (max-width: 900px) {

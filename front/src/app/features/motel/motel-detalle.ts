@@ -243,15 +243,25 @@ function sumarHoras(valor: string, horas: number): string {
               <span>Entrada</span>
               <input type="datetime-local" name="inicio" [ngModel]="inicio()" (ngModelChange)="cambiarInicio($event)" />
             </label>
-            <label class="campo">
-              <span>Salida</span>
-              <input type="datetime-local" name="fin" [ngModel]="fin()" (ngModelChange)="fin.set($event)" />
-            </label>
+            <div class="campo">
+              <span id="duracion-titulo">Duración</span>
+              <div class="duraciones" role="radiogroup" aria-labelledby="duracion-titulo">
+                @for (m of duraciones(); track m.idModalidad) {
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="horas() === m.duracionHoras"
+                    [class.elegida]="horas() === m.duracionHoras"
+                    (click)="horas.set(m.duracionHoras)"
+                  >
+                    {{ m.duracionHoras }} h
+                  </button>
+                }
+              </div>
+            </div>
 
-            @if (rangoInvalido()) {
-              <p class="aviso mal">La salida debe ser posterior a la entrada.</p>
-            } @else if (!rango()) {
-              <p class="suave pequeno">Elige el horario y te mostramos las habitaciones libres.</p>
+            @if (!rango()) {
+              <p class="suave pequeno">Elige la hora de entrada y te mostramos las habitaciones libres.</p>
             } @else if (disponibles.isLoading()) {
               <p class="suave">Buscando habitaciones…</p>
             } @else if (disponibles.error(); as e) {
@@ -267,7 +277,7 @@ function sumarHoras(valor: string, horas: number): string {
                       <span class="suave pequeno">{{ nombreTipo(h.idTipo) }} · {{ capacidadTipo(h.idTipo) }}</span>
                     </div>
                     @if (esCliente()) {
-                      <a class="boton-enlace" [routerLink]="['/reservar', h.idHabitacion]" [queryParams]="{ inicio: rango()?.inicio }">
+                      <a class="boton-enlace" [routerLink]="['/reservar', h.idHabitacion]" [queryParams]="{ inicio: rango()?.inicio, horas: horas() }">
                         Solicitar
                       </a>
                     } @else {
@@ -345,17 +355,17 @@ export class MotelDetalle {
   protected readonly fotoActiva = signal<string | null>(null);
 
   protected readonly inicio = linkedSignal(() => this.inicioSugerido().slice(0, 16));
-  /** Con una entrada sugerida se propone la modalidad más corta (3 h) como salida. */
-  protected readonly fin = linkedSignal(() => (this.inicio() ? sumarHoras(this.inicio(), 3) : ''));
+  /** La salida no se elige: es la entrada más la duración de la modalidad. */
+  protected readonly duraciones = computed(() =>
+    [...lista(this.modalidades)].sort((a, b) => a.duracionHoras - b.duracionHoras),
+  );
+  /** Duración elegida (3, 6 o 12 h); arranca en la más corta. */
+  protected readonly horas = linkedSignal(() => this.duraciones()[0]?.duracionHoras ?? 3);
+  protected readonly fin = computed(() => (this.inicio() ? sumarHoras(this.inicio(), this.horas()) : ''));
 
   protected cambiarInicio(valor: string): void {
     this.inicio.set(valor);
   }
-
-  protected readonly rangoInvalido = computed(() => {
-    const [a, b] = [this.inicio(), this.fin()];
-    return a !== '' && b !== '' && b <= a;
-  });
 
   /** undefined mientras falte una fecha: así el recurso no dispara la búsqueda. */
   protected readonly rango = computed(() => {

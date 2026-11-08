@@ -5,7 +5,7 @@ import { forkJoin, of, switchMap } from 'rxjs';
 import { HabitacionApi, ModalidadApi, MotelApi, PoliticaApi, ServicioApi, TarifaApi, TipoHabitacionApi } from '../../core/api/entidades';
 import type { Reserva, ServicioAdicional } from '../../core/api/models';
 import { ReservaApi } from '../../core/api/entidades';
-import { recargoPorPersonas, totalEstimado, type ServicioElegido } from '../../core/reservas/total';
+import { recargoPorPersonas, tarifaDelDia, totalEstimado, type ServicioElegido } from '../../core/reservas/total';
 import { legible } from '../../shared/etiquetas';
 import { lista, valorDe } from '../../shared/recursos';
 
@@ -115,24 +115,32 @@ import { lista, valorDe } from '../../shared/recursos';
               />
             </label>
 
-            <label class="campo">
-              <span>Modalidad y tarifa</span>
-              <select
-                name="tarifa"
-                required
-                [ngModel]="idTarifa()"
-                (ngModelChange)="idTarifa.set($event)"
-              >
-                <option [ngValue]="null">— Seleccione —</option>
-                @for (t of d.tarifas; track t.idTarifa) {
-                  <option [ngValue]="t.idTarifa">
-                    {{ nombreModalidad(t.idModalidad) }} · {{ legible(t.tipoDia) }} ·
-                    {{ t.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
-                  </option>
-                }
-              </select>
-            </label>
           </div>
+
+          <fieldset class="duraciones">
+            <legend>¿Cuánto tiempo?</legend>
+            @for (o of duraciones(); track o.modalidad.idModalidad) {
+              <label class="duracion" [class.elegida]="idModalidad() === o.modalidad.idModalidad" [class.apagada]="!o.tarifa">
+                <input
+                  type="radio"
+                  name="duracion"
+                  [value]="o.modalidad.idModalidad"
+                  [checked]="idModalidad() === o.modalidad.idModalidad"
+                  [disabled]="!o.tarifa"
+                  (change)="idModalidad.set(o.modalidad.idModalidad ?? null)"
+                />
+                <strong>{{ o.modalidad.duracionHoras }} horas</strong>
+                <span class="suave pequeno">{{ o.modalidad.nombre }}</span>
+                <span class="precio">
+                  @if (o.tarifa) {
+                    {{ o.tarifa.precio | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                  } @else {
+                    No disponible
+                  }
+                </span>
+              </label>
+            }
+          </fieldset>
 
           @if (d.tarifas.length === 0) {
             <p class="aviso mal">
@@ -176,7 +184,7 @@ import { lista, valorDe } from '../../shared/recursos';
                 El servidor recalcula el total y la hora de salida al crear la reserva.
               </p>
             </div>
-            <button type="submit" class="primario" [disabled]="enviando() || idTarifa() === null">
+            <button type="submit" class="primario" [disabled]="enviando() || !tarifaElegida()">
               {{ enviando() ? 'Reservando…' : 'Reservar' }}
             </button>
           </div>
@@ -209,6 +217,61 @@ import { lista, valorDe } from '../../shared/recursos';
     }
     .resumen {
       align-items: flex-end;
+    }
+    .duraciones {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      padding: 12px;
+    }
+    .duracion {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 12px 14px;
+      border: 1px solid var(--borde);
+      border-radius: var(--r-m);
+      background: var(--superficie);
+      cursor: pointer;
+      transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease;
+    }
+    .duracion input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .duracion:hover {
+      border-color: var(--marca);
+    }
+    .duracion:has(input:focus-visible) {
+      outline: 2px solid var(--marca);
+      outline-offset: 2px;
+    }
+    .duracion.elegida {
+      border-color: var(--marca);
+      background: var(--marca-tenue);
+    }
+    .duracion.elegida strong {
+      color: var(--marca-fuerte);
+    }
+    .duracion.apagada {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .duracion strong {
+      font-size: 1.1rem;
+    }
+    .duracion .precio {
+      margin-top: 4px;
+      font-weight: 600;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .duracion {
+        transition: none;
+      }
     }
     .previa {
       padding: 4px 0;
@@ -246,6 +309,8 @@ export class Reservar {
   readonly idHabitacion = input.required<string>();
   /** El router lo deja en undefined cuando la URL no trae ?inicio=, por ejemplo al recargar. */
   readonly inicioSugerido = input<string | undefined>('', { alias: 'inicio' });
+  /** Duración elegida en el detalle del motel (?horas=3). */
+  readonly horasSugeridas = input<string | undefined>('', { alias: 'horas' });
 
   private readonly habitacionApi = inject(HabitacionApi);
   private readonly tipoApi = inject(TipoHabitacionApi);
@@ -262,7 +327,11 @@ export class Reservar {
   /** El input datetime-local no admite segundos, así que se recortan. */
   protected readonly inicio = linkedSignal(() => (this.inicioSugerido() ?? '').slice(0, 16));
   protected readonly personas = signal(2);
-  protected readonly idTarifa = signal<number | null>(null);
+  /** La persona elige la duración (3, 6 o 12 h); la tarifa sale de la duración y del día. */
+  protected readonly idModalidad = linkedSignal<number | null>(() => {
+    const horas = Number(this.horasSugeridas());
+    return lista(this.modalidades).find((m) => m.duracionHoras === horas)?.idModalidad ?? null;
+  });
   protected readonly cantidades = signal<Record<number, number>>({});
   protected readonly enviando = signal(false);
   protected readonly error = signal('');
@@ -304,8 +373,16 @@ export class Reservar {
       .map((servicio) => ({ servicio, cantidad: cantidades[servicio.idServicio!] }));
   });
 
-  protected readonly tarifaElegida = computed(
-    () => valorDe(this.datos, null)?.tarifas.find((t) => t.idTarifa === this.idTarifa()) ?? null,
+  /** Cada duración del catálogo con la tarifa que le corresponde a esta habitación ese día. */
+  protected readonly duraciones = computed(() => {
+    const tarifas = valorDe(this.datos, null)?.tarifas ?? [];
+    return [...lista(this.modalidades)]
+      .sort((a, b) => a.duracionHoras - b.duracionHoras)
+      .map((modalidad) => ({ modalidad, tarifa: tarifaDelDia(tarifas, modalidad.idModalidad!, this.inicio()) }));
+  });
+
+  protected readonly tarifaElegida = computed(() =>
+    tarifaDelDia(valorDe(this.datos, null)?.tarifas ?? [], this.idModalidad(), this.inicio()),
   );
 
   protected readonly recargo = computed(() =>
@@ -325,9 +402,8 @@ export class Reservar {
 
   protected readonly total = computed(() => {
     const datos = valorDe(this.datos, null);
-    const tarifa = datos?.tarifas.find((t) => t.idTarifa === this.idTarifa());
     return totalEstimado(
-      tarifa?.precio ?? 0,
+      this.tarifaElegida()?.precio ?? 0,
       this.elegidos(),
       this.personas(),
       datos?.politica ?? null,
@@ -353,8 +429,8 @@ export class Reservar {
   }
 
   protected enviar(): void {
-    const idTarifa = this.idTarifa();
-    if (this.enviando() || idTarifa === null) {
+    const idTarifa = this.tarifaElegida()?.idTarifa;
+    if (this.enviando() || idTarifa === undefined) {
       return;
     }
 
