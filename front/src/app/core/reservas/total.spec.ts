@@ -1,5 +1,5 @@
-import { recargoPorPersonas, totalEstimado } from './total';
-import type { PoliticaReserva, ServicioAdicional } from '../api/models';
+import { recargoPorPersonas, tarifaDelDia, totalEstimado } from './total';
+import type { PoliticaReserva, ServicioAdicional, Tarifa } from '../api/models';
 
 /** Políticas y precios tal como los carga database/02_insercion_registros.sql. */
 const POLITICA_MOTEL_1: PoliticaReserva = {
@@ -68,5 +68,30 @@ describe('totalEstimado', () => {
     expect(totalEstimado(60000, [{ servicio: servicio(1, 90000), cantidad: -3 }], 2, POLITICA_MOTEL_1)).toBe(
       60000,
     );
+  });
+});
+
+describe('tarifaDelDia', () => {
+  // Tipo 2 (Suite Jacuzzi) del script de datos: Rato todos los días y Noche con precio por tipo de día.
+  const TARIFAS: Tarifa[] = [
+    { idTarifa: 3, idTipo: 2, idModalidad: 1, precio: 110000, tipoDia: 'TODOS', vigenteDesde: '2026-01-01' },
+    { idTarifa: 4, idTipo: 2, idModalidad: 3, precio: 220000, tipoDia: 'ENTRE_SEMANA', vigenteDesde: '2026-01-01' },
+    { idTarifa: 5, idTipo: 2, idModalidad: 3, precio: 250000, tipoDia: 'FIN_DE_SEMANA', vigenteDesde: '2026-01-01' },
+    { idTarifa: 9, idTipo: 2, idModalidad: 1, precio: 90000, tipoDia: 'TODOS', vigenteDesde: '2025-01-01', vigenteHasta: '2025-12-31' },
+  ];
+
+  it('elige la tarifa del tipo de día de la entrada', () => {
+    expect(tarifaDelDia(TARIFAS, 3, '2026-11-18T21:00')?.idTarifa).toBe(4); // miércoles
+    expect(tarifaDelDia(TARIFAS, 3, '2026-11-21T21:00')?.idTarifa).toBe(5); // sábado
+  });
+
+  it('usa la de todos los días y descarta las que no están vigentes', () => {
+    expect(tarifaDelDia(TARIFAS, 1, '2026-11-21T21:00')?.idTarifa).toBe(3);
+    expect(tarifaDelDia(TARIFAS, 1, '2025-06-10T21:00')?.idTarifa).toBe(9);
+  });
+
+  it('devuelve null si la duración no tiene tarifa o no se ha elegido', () => {
+    expect(tarifaDelDia(TARIFAS, 2, '2026-11-18T21:00')).toBeNull();
+    expect(tarifaDelDia(TARIFAS, null, '2026-11-18T21:00')).toBeNull();
   });
 });
